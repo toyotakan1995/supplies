@@ -34,10 +34,9 @@ jobs:
           printf 'window.API_BASE = %s;\n' "'${{ vars.API_BASE }}'" > web/config.js
           cat web/config.js
 
-      # enablement: true = เปิด GitHub Pages ให้เองถ้ายังไม่ได้เปิด (ไม่ต้องไปกดใน Settings)
+      # หมายเหตุ: อย่าใส่ enablement: true — GITHUB_TOKEN ไม่มีสิทธิ์เปิด Pages เอง แล้วขั้นนี้จะล้มทั้ง job
+      # ต้องไปเปิดที่ Settings → Pages → Source: GitHub Actions ด้วยมือครั้งเดียว (ทำแล้ว)
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web
