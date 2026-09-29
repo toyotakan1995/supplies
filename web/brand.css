@@ -1,0 +1,731 @@
+/* ============================================================
+   ระบบเบิกอุปกรณ์ — ธีมร่วมของทุกหน้า
+   ลิงก์ไฟล์นี้เป็นอันสุดท้ายต่อจาก <style> ของแต่ละหน้า
+   ============================================================ */
+:root{
+  --brand:#E60012;            /* แดงโตโยต้า */
+  --brand-700:#b3000e;        /* ใช้กับตัวอักษรบนพื้นอ่อน (แดงสดเข้มไม่พอ) */
+  --brand-800:#8f000b;
+
+  /* เทากลางเอียงไปทางแดงแบรนด์นิดเดียว — เทาเย็นล้วนกับพื้นแดงอยู่ด้วยกันแล้วดูไม่เข้าชุด */
+  --paper:#f6f4f5;
+  --panel:#ffffff;
+  --panel-2:#f7f5f6;
+  --ink:#1d1a1c;
+  --ink-soft:#524c50;
+  /* ⚠️ เข้มกว่า --muted ของระบบใบสำคัญจ่าย (#6e7482) โดยตั้งใจ
+     เพราะพื้นหลังหน้านี้เป็นสีเทา ไม่ใช่ขาว · สีอ่อนกว่านี้วัดได้ต่ำกว่าเกณฑ์ 4.5 */
+  --muted:#6b6469;
+  --line:#e6e1e3;
+  --line-strong:#d6cfd2;
+
+  /* สีสถานะ — สงวนความหมาย ห้ามเอาไปใช้ตกแต่งทั่วไป */
+  --ok:#0f7f4f;               /* สำเร็จ / อนุมัติ / ของพร้อมใช้ */
+  --ok-bg:#eaf6f0;
+  --warn:#8a5a05;             /* รอดำเนินการ / ใกล้หมด */
+  --warn-bg:#fdf3e0;
+  --bad:#b3251a;              /* ปฏิเสธ / ของหมด */
+  --bad-bg:#fdeceb;
+  --info:#1d4ed8;             /* กำลังดำเนินการ */
+  --info-bg:#eaf0fe;
+
+  /* มุมโค้ง 3 ระดับ — ช่องกรอก/ปุ่ม · การ์ด · กล่องซ้อน */
+  --r-sm:10px; --radius:14px; --r-lg:18px;
+
+  /* เงามีทั้งระยะเยื้องและความฟุ้ง ไม่ใช่วงแสงรอบตัว */
+  --shadow:0 1px 2px rgba(24,20,22,.05), 0 12px 28px -20px rgba(24,20,22,.5);
+  --shadow-lift:0 2px 6px rgba(24,20,22,.06), 0 22px 44px -26px rgba(24,20,22,.55);
+  --shadow-pop:0 24px 60px -24px rgba(24,20,22,.45), 0 4px 12px rgba(24,20,22,.08);
+
+  /* ฟอนต์ชุดเดียวกับระบบใบสำคัญจ่าย — เนื้อความ Sarabun · หัวข้อ/ปุ่ม/ป้ายสถานะ Prompt
+     โหลดจาก Google Fonts ที่ <head> ของทุกหน้า · เน็ตล่มจะตกไปที่ Leelawadee UI ที่มากับ Windows */
+  --font:"Sarabun","Leelawadee UI","Segoe UI",system-ui,sans-serif;
+  --font-head:"Prompt","Sarabun","Leelawadee UI","Segoe UI",system-ui,sans-serif;
+  --ease:cubic-bezier(.22,.9,.28,1);
+  /* วงแหวนโฟกัสชุดเดียวทั้งระบบ — เดิมช่องกรอกมีแต่ปุ่มไม่มี */
+  --ring:0 0 0 3px rgba(230,0,18,.16);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+h1,h2,h3,h4{font-family:var(--font-head)}
+
+body{
+  /* ไล่เฉดจาง ๆ ใต้แถบหัวสีเข้ม — ให้เนื้อหาดูวางอยู่บนพื้น ไม่ใช่ลอยบนสีเทาแบน ๆ
+     จบที่ --paper ภายใน 340px ที่เหลือของหน้าเป็นสีเดียวสม่ำเสมอ */
+  background:linear-gradient(180deg,#efebed 0,var(--paper) 340px) no-repeat var(--paper);
+  color:var(--ink);
+  font-family:var(--font); font-size:15.5px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+
+/* หนึ่งจังหวะเคลื่อนไหวของทั้งระบบ — เนื้อหาลอยขึ้นตอนหน้าพร้อม
+   ไม่ใส่ทีละส่วนให้กระพริบกันเอง · แถบหัว/แถบล่างไม่ขยับ (เป็นโครงหน้า) */
+@keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+.page{animation:rise .26s var(--ease) both}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important; animation-iteration-count:1!important;
+                       transition-duration:.001ms!important; scroll-behavior:auto!important}
+}
+
+/* ---------- แถบหัว ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:11px max(18px, env(safe-area-inset-right)) 11px max(18px, env(safe-area-inset-left));
+  background:linear-gradient(100deg,#23252b,#2f3238);
+  box-shadow:0 8px 24px -16px rgba(0,0,0,.55);
+}
+.topbar::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+  background:linear-gradient(90deg,var(--brand),var(--brand-700));
+}
+.brand{display:flex; align-items:center; gap:11px; min-width:0; text-decoration:none}
+.brandmark{
+  width:40px; height:40px; flex:0 0 auto; border-radius:11px; background:#fff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 14px -6px rgba(0,0,0,.5);
+}
+.brandmark img{width:28px; height:28px; display:block}
+.brand-text{line-height:1.2; min-width:0}
+.brand-text .co{font-family:var(--font-head); font-weight:700; font-size:16px; color:#fff; white-space:nowrap}
+.brand-text .sys{font-size:12px; color:rgba(255,255,255,.74); white-space:nowrap}
+
+.nav{display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-inline-start:auto}
+.nav a, .nav button{
+  font:inherit; font-size:14px; cursor:pointer; text-decoration:none;
+  padding:7px 13px; border-radius:9px; border:0;
+  background:rgba(255,255,255,.14); color:#fff;
+  transition:background .18s ease, transform .12s ease;
+}
+.nav a:hover, .nav button:hover{background:rgba(255,255,255,.27)}
+.nav a:active, .nav button:active{transform:translateY(1px)}
+.nav a.on{background:#fff; color:var(--brand-700); font-weight:700;
+          box-shadow:0 2px 4px rgba(0,0,0,.18), 0 10px 20px -14px rgba(0,0,0,.9)}
+.nav a:focus-visible, .nav button:focus-visible{outline:2px solid #fff; outline-offset:2px}
+/* เส้นคั่นก่อนกลุ่ม "ของฉัน" (กระดิ่ง · ชื่อ · ออกจากระบบ)
+   ก่อนหน้านี้ทุกอย่างเป็นปุ่มหน้าตาเดียวกัน 10 ปุ่มเรียงกัน หาเมนูที่ต้องการไม่เจอ */
+.nav .sep{width:1px; align-self:stretch; margin-inline:5px; background:rgba(255,255,255,.2)}
+.nav a.help{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:38px; min-height:38px; padding:0; font-size:15px; border-radius:9px;
+}
+.nav button.out{background:transparent; border:1px solid rgba(255,255,255,.28); color:rgba(255,255,255,.9)}
+.nav button.out:hover{background:rgba(255,255,255,.16); color:#fff}
+.nav .me{
+  display:inline-flex; align-items:center; gap:7px;
+  font-size:13px; color:#fff; background:rgba(255,255,255,.10);
+  padding:5px 12px; border-radius:999px; white-space:nowrap;
+}
+.nav .me b{font-weight:700}
+.nav .me .r{color:rgba(255,255,255,.72)}
+.nav .me .r::before{content:'·'; margin-inline-end:7px; color:rgba(255,255,255,.4)}
+.nav .me .r:empty{display:none}
+
+/* ============================================================
+   แถบนำทางล่างจอ (มือถือ + แท็บเล็ต)
+   พนักงาน 309 คนส่วนใหญ่เปิดจากมือถือ · แถบลิงก์ 7 ปุ่มด้านบนกินจอเกือบ 1/10
+   และอยู่พ้นระยะนิ้วโป้ง · ย้ายมาไว้ล่างจอซึ่งกดถึงง่ายที่สุด
+
+   🔑 เงื่อนไข 2 ทาง:
+   - `max-width:1024px` = ครอบ iPad แนวตั้ง (768/810/834) และ iPad แนวนอน 1024
+   - `pointer:coarse` = เครื่องที่ใช้นิ้ว ต่อให้จอกว้างกว่านั้น (iPad Pro แนวนอน 1194/1366)
+     จำกัดไว้ที่ 1400px เพื่อไม่ให้จอสัมผัสขนาดใหญ่ (จอทัชสำหรับเดสก์ท็อป) ได้แถบล่างไปด้วย
+   เดิมใช้ `max-width:760px` อย่างเดียว → **iPad ตกไปได้หน้าตาแบบเดสก์ท็อป**
+   แถบหัวสูง 159px (15% ของจอ) เพราะลิงก์ 7 อันขึ้นบรรทัดใหม่ และปุ่มทุกปุ่มสูงแค่ 37px
+   ============================================================ */
+.tabbar{display:none}
+@media (max-width:1024px), (pointer:coarse) and (max-width:1400px){
+  .tabbar{
+    display:flex; position:fixed; inset-inline:0; bottom:0; z-index:50;
+    background:var(--panel); border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom);
+    padding-inline:env(safe-area-inset-left) env(safe-area-inset-right);
+    box-shadow:0 -6px 20px -14px rgba(27,29,34,.5);
+  }
+  .tabbar a, .tabbar button{
+    flex:1; min-width:0; min-height:56px;      /* เป้ากดใหญ่กว่า 44px ตามเกณฑ์สัมผัส */
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    font:inherit; font-size:11px; text-decoration:none; border:0; background:none; cursor:pointer;
+    color:var(--muted); padding:6px 2px 8px; position:relative;
+  }
+  .tabbar .ic{font-size:19px; line-height:1}
+  .tabbar .lb{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+  .tabbar a.on{color:var(--brand-700); font-weight:700}
+  .tabbar a.on::before{
+    content:""; position:absolute; top:0; inset-inline:22%; height:3px;
+    border-radius:0 0 3px 3px; background:var(--brand);
+  }
+  .tabbar .n{
+    position:absolute; top:5px; inset-inline-start:calc(50% + 5px);
+    min-width:16px; height:16px; padding:0 4px; border-radius:999px;
+    background:var(--brand); color:#fff; font-size:10px; font-weight:700; line-height:16px; text-align:center;
+  }
+  .tabbar .n[hidden]{display:none}
+
+  /* ลิงก์ในแถบหัวย้ายลงล่างหมดแล้ว เหลือแค่กระดิ่งกับออกจากระบบ */
+  .nav a:not(.keep){display:none}
+  .nav{margin-inline-start:auto; width:auto}
+  .nav .me, .nav .sep{display:none}
+
+  /* เผื่อที่ให้แถบล่าง ไม่ให้ทับเนื้อหาท้ายหน้า
+     ผูกกับการมีแถบจริง ไม่งั้นหน้าเข้าสู่ระบบ (ไม่มีแถบ) จะถูกดันขึ้นจนไม่อยู่กลางจอ */
+  body:has(.tabbar){padding-bottom:76px}
+}
+
+/* ---------- แท็บเล็ต (761–1024px) ----------
+   ได้แถบล่างเหมือนมือถือ แต่จอกว้างพอจะวางของแบบเดสก์ท็อป จึงไม่ยุบเป็นคอลัมน์เดียว
+   และไม่เปลี่ยนกล่องซ้อนเป็นหน้าเต็มจอ (กฎนั้นยังผูกกับ ≤760px ตามเดิม) */
+@media (min-width:761px) and (max-width:1024px){
+  /* iPad ถือสองมือ นิ้วโป้งอยู่มุมล่าง — ช่องกดใหญ่กว่ามือถือได้เพราะมีที่เหลือเฟือ */
+  .tabbar a, .tabbar button{min-height:60px; flex:0 1 150px}
+  .tabbar{justify-content:center}
+  .tabbar .ic{font-size:21px}
+  .tabbar .lb{font-size:12px}
+  body:has(.tabbar){padding-bottom:84px}
+  .page{padding-top:24px}
+}
+
+/* ตารางบนแท็บเล็ต/มือถือ: บีบระยะในช่องลง เพื่อให้เห็นคอลัมน์ต่อจอมากขึ้นก่อนต้องปัด
+   (ปัดต่อได้อยู่แล้ว และมีเงาขอบบอก แต่ยิ่งเห็นครบในจอเดียวยิ่งดี) */
+@media (max-width:1024px){
+  .tblwrap th, .tblwrap td{padding:10px 11px}
+  .tblwrap th:first-child, .tblwrap td:first-child{padding-inline-start:14px}
+  .tblwrap th:last-child, .tblwrap td:last-child{padding-inline-end:14px}
+}
+
+/* ตะแคงเครื่อง: จอสูงแค่ ~390px ถ้าแถบล่างยังหนา 76px จะกินจอไปเกือบ 1/5 */
+@media (max-height:460px){
+  .tabbar a, .tabbar button{min-height:46px; padding:3px 2px 5px}
+  .tabbar .ic{font-size:16px}
+  .tabbar .lb{font-size:10px}
+  body:has(.tabbar){padding-bottom:58px}
+}
+
+/* ---------- โครงหน้า ---------- */
+/* ตอนตะแคงมือถือ รอยบากกินขอบจอด้านข้าง — เว้นให้พ้นเสมอ */
+.page{max-width:1180px; margin:0 auto;
+      padding:26px max(18px, env(safe-area-inset-right)) 80px max(18px, env(safe-area-inset-left))}
+.page > h1{font-family:var(--font-head); font-size:26px; font-weight:700; margin:0;
+           letter-spacing:-.01em; line-height:1.3}
+/* คำอธิบายใต้หัวข้อ — จำกัดความยาวบรรทัดไว้ ไม่ให้กวาดตาข้ามจอกว้าง */
+.page > .sub{color:var(--muted); font-size:14.5px; margin:7px 0 24px; max-width:68ch}
+
+/* หัวหน้าที่มีปุ่มหลักอยู่ขวา — เดิม request.html จัดเองด้วย .head-row ของตัวเอง
+   ย้ายมาเป็นชิ้นส่วนกลาง หน้าอื่นที่ต้องมีปุ่มบนหัวจะได้ระยะเดียวกันทันที */
+.pagehead{display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:24px}
+.pagehead > .t{flex:1 1 300px; min-width:0}
+.pagehead h1{font-family:var(--font-head); font-size:clamp(22px,5vw,26px); font-weight:700;
+             margin:0; letter-spacing:-.01em; line-height:1.3}
+.pagehead .sub{color:var(--muted); font-size:14.5px; margin:7px 0 0; max-width:68ch}
+.pagehead > .btn{flex:0 0 auto}
+/* บนมือถือปุ่มหลักกินเต็มบรรทัด — พนักงานส่วนใหญ่เข้าจากมือถือและปุ่มนี้คือสิ่งเดียวที่ต้องกด */
+@media (max-width:760px){ .pagehead > .btn{width:100%; min-height:50px; font-size:16px} }
+
+/* หน้าที่เนื้อหาเป็นรายการเดียวเรียงลงมา (หน้าหลัก · ใบเบิกของฉัน) อ่านง่ายกว่าถ้าไม่กางเต็ม 1180px
+   แถวยาวเป็นเมตรทำให้ตากวาดจากซ้ายสุดไปขวาสุดโดยไม่มีอะไรอยู่ตรงกลาง */
+.page.narrow{max-width:900px}
+
+/* กล่องบอกสิ่งที่ต้องทำต่อ — เดิม request.html ใช้ .quiet แล้วเขียนสไตล์ทับด้วย style="" ยาวหนึ่งบรรทัด */
+.callout{
+  display:block; border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--panel-2); padding:14px 16px; font-size:14.5px; color:var(--ink-soft);
+}
+.callout b{display:block; font-family:var(--font-head); font-weight:600; margin-bottom:3px}
+.callout.warn{background:var(--warn-bg); border-color:#eddcb8; color:#7a4f04}
+.callout.warn b{color:#7a4f04}
+
+.card{
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; min-width:0;
+}
+/* การ์ดที่เป็นลิงก์เท่านั้นที่ยกขึ้นตอนชี้ — การ์ดข้อมูลเฉย ๆ ขยับได้จะหลอกว่ากดได้ */
+a.card{display:block; text-decoration:none; color:inherit;
+       transition:transform .16s var(--ease), box-shadow .2s ease, border-color .18s ease}
+@media (hover:hover){
+  a.card:hover{transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:var(--line-strong)}
+}
+
+/* ---------- ปุ่ม ---------- */
+.btn{
+  font:inherit; font-family:var(--font-head); font-size:15px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:40px; padding:9px 18px; border-radius:10px; border:1px solid var(--line);
+  background:var(--panel-2); color:var(--ink); white-space:nowrap;
+  transition:background .18s ease, transform .12s ease, box-shadow .2s ease, border-color .18s ease;
+}
+.btn:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--brand)}
+.btn:hover{background:#eceef3}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5; cursor:not-allowed; transform:none}
+.btn-primary{
+  background:linear-gradient(100deg,var(--brand),var(--brand-700)); color:#fff; font-weight:700;
+  border-color:transparent; box-shadow:0 2px 4px rgba(230,0,18,.18), 0 12px 24px -14px rgba(230,0,18,.85);
+}
+.btn-primary:active{transform:translateY(1px); box-shadow:0 1px 2px rgba(230,0,18,.2)}
+.btn-primary:hover{filter:brightness(1.06); background:linear-gradient(100deg,var(--brand),var(--brand-700))}
+.btn-ghost{background:transparent; border-color:var(--line); color:var(--ink-soft)}
+.btn-ghost:hover{background:var(--panel-2)}
+
+/* ---------- รูปสินค้า ----------
+   กรอบขนาดคงที่ พื้นเทาอ่อน · รูปใช้ object-fit:cover ไม่ให้สัดส่วนเพี้ยน
+   ไม่มีรูป = โชว์ไอคอนกล่องจาง ๆ (ยังเห็นเป็นช่องอยู่ ไม่ใช่ที่ว่างเปล่าที่ดูเหมือนหน้าพัง) */
+.ithumb{
+  flex:0 0 auto; width:44px; height:44px; border-radius:9px; overflow:hidden;
+  background:var(--panel-2); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-size:19px; color:var(--muted); line-height:1;
+}
+.ithumb img{width:100%; height:100%; object-fit:cover; display:block}
+/* เส้นขอบในบาง ๆ กันรูปพื้นขาวกลืนไปกับการ์ด (สินค้าสำนักงานส่วนใหญ่ถ่ายบนพื้นขาว) */
+.ithumb{box-shadow:inset 0 0 0 1px rgba(27,29,34,.05)}
+.ithumb img[hidden]{display:none}
+.ithumb.lg{width:60px; height:60px; border-radius:11px; font-size:24px}
+
+/* ตัวเลือกรูปในฟอร์มเพิ่ม/แก้ไขสินค้า */
+.imgpick{display:flex; align-items:center; gap:14px; margin-bottom:14px}
+.imgpick .ithumb{width:88px; height:88px; border-radius:12px; font-size:32px}
+.imgpick .btns{display:flex; flex-direction:column; gap:8px; min-width:0}
+.imgpick .fhint{margin:0}
+.imgpick input[type=file]{display:none}
+
+/* ---------- ช่องกรอก ---------- */
+label.fld{display:block; margin-bottom:14px}
+label.fld > span{display:block; font-size:13.5px; color:var(--ink-soft); font-weight:700; margin-bottom:5px}
+/* ครอบทุกชนิดยกเว้นติ๊ก/เรดิโอ — ถ้าไล่ระบุทีละ type จะลืม date/month แล้วมันจะตกไปใช้ค่า 13.3px ของเบราว์เซอร์ */
+input:not([type=checkbox]):not([type=radio]), select, textarea{
+  font:inherit; font-size:16px;
+  width:100%; padding:10px 13px; border-radius:10px;
+  border:1px solid var(--line); background:#fff; color:var(--ink);
+}
+input:focus, select:focus, textarea:focus{border-color:var(--brand); outline:none; box-shadow:0 0 0 3px rgba(230,0,18,.12)}
+
+/* ---------- ป้ายสถานะ ---------- */
+.pill{
+  display:inline-flex; align-items:center; gap:5px;
+  font-family:var(--font-head); font-size:12.5px; font-weight:700; padding:2px 10px; border-radius:999px; white-space:nowrap;
+}
+.pill.ok{background:var(--ok-bg); color:#0b6b42}
+.pill.warn{background:var(--warn-bg); color:#7a4f04}
+.pill.bad{background:var(--bad-bg); color:var(--bad)}
+.pill.info{background:var(--info-bg); color:var(--info)}
+.pill.mute{background:var(--panel-2); color:var(--muted)}
+
+.btn-danger{background:var(--bad-bg); border-color:#f0c8c4; color:var(--bad); font-weight:700}
+.btn-danger:hover{background:#fbdedb}
+
+/* ---------- กระดิ่งแจ้งเตือน ---------- */
+.nav .bell{position:relative; padding:7px 11px; font-size:15px; line-height:1}
+.nav .bell .dot{
+  position:absolute; top:-3px; inset-inline-end:-3px; min-width:17px; height:17px; padding:0 4px;
+  border-radius:999px; background:var(--brand); color:#fff;
+  font-size:11px; font-weight:700; line-height:17px; text-align:center;
+}
+.nav .bell .dot[hidden]{display:none}
+.noti{
+  display:block; text-decoration:none; color:inherit;
+  padding:11px 13px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px;
+  background:var(--panel);
+}
+a.noti:hover{background:var(--panel-2)}
+.noti.new{background:#fff8f8; border-color:#f6d9db}
+.noti.new b{display:flex; align-items:center; gap:7px}
+.noti.new b::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--brand); flex:0 0 auto}
+.noti b{display:block; font-size:14.5px}
+.noti .body{display:block; font-size:13.5px; color:var(--ink-soft); margin-top:2px}
+.noti time{display:block; font-size:12px; color:var(--muted); margin-top:5px}
+
+/* ---------- โครงร่างตอนกำลังโหลด ----------
+   ใช้ไล่สีเคลื่อนที่แทนการกะพริบ — สายตาอ่านว่า "กำลังทำงาน" ไม่ใช่ "จอกระตุก" */
+.skel{
+  display:block; height:13px; border-radius:7px; width:100%;
+  background:linear-gradient(90deg, #eceef2 25%, #f5f6f9 37%, #eceef2 63%);
+  background-size:400% 100%; animation:skelmove 1.25s ease-in-out infinite;
+}
+.skel.w40{width:40%} .skel.w70{width:70%; margin-top:9px; height:11px}
+@keyframes skelmove{0%{background-position:100% 0} 100%{background-position:0 0}}
+.skelrow td{padding:14px}
+.skelcard{
+  background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  padding:16px; margin-bottom:9px; box-shadow:var(--shadow);
+}
+.skelcard.tall{min-height:120px}
+/* เครื่องที่ตั้งค่าลดการเคลื่อนไหว: หยุดวิ่ง แต่ยังเห็นเป็นแถบเทาว่ากำลังโหลด */
+@media (prefers-reduced-motion:reduce){ .skel{animation:none} }
+
+/* ---------- ตารางมาตรฐาน ---------- */
+.tblwrap{
+  overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--panel); box-shadow:var(--shadow);
+}
+/* เงาบอกว่า "ตารางเลื่อนต่อได้ทางนี้" — โผล่เฉพาะตอนที่มีคอลัมน์ล้นออกไปจริง ๆ
+   (background-attachment:local ทำให้ชั้นสีขาวเลื่อนไปกับเนื้อหา เผยเงาที่ตรึงอยู่กับกรอบ)
+   บนมือถือตารางกว้างกว่าจอเกือบทุกหน้า ถ้าไม่มีอะไรบอก พนักงานจะไม่รู้ว่าปัดดูคอลัมน์ที่เหลือได้ */
+.tblwrap{
+  background-image:
+    linear-gradient(90deg, var(--panel) 60%, rgba(255,255,255,0)),
+    linear-gradient(270deg, var(--panel) 60%, rgba(255,255,255,0)),
+    radial-gradient(farthest-side at 0 50%, rgba(24,20,22,.14), rgba(24,20,22,0)),
+    radial-gradient(farthest-side at 100% 50%, rgba(24,20,22,.14), rgba(24,20,22,0));
+  background-position:0 0, 100% 0, 0 0, 100% 0;
+  background-repeat:no-repeat;
+  background-size:46px 100%, 46px 100%, 16px 100%, 16px 100%;
+  background-attachment:local, local, scroll, scroll;
+}
+.tblwrap table{border-collapse:collapse; width:100%}
+.tblwrap th,.tblwrap td{padding:11px 14px; text-align:start; border-bottom:1px solid var(--line); vertical-align:middle}
+/* ช่องแรก-ช่องสุดท้ายเว้นจากขอบกรอบมากกว่าช่องกลาง ไม่งั้นตัวอักษรชนขอบการ์ด */
+.tblwrap th:first-child,.tblwrap td:first-child{padding-inline-start:18px}
+.tblwrap th:last-child,.tblwrap td:last-child{padding-inline-end:18px}
+.tblwrap th{background:var(--panel-2); font-family:var(--font-head); font-size:12.5px;
+            font-weight:600; color:var(--muted); border-bottom-color:var(--line-strong)}
+.tblwrap tbody tr{transition:background .14s ease}
+/* บนจอสัมผัส แถวที่เพิ่งแตะจะค้างเป็นสีไฮไลต์ อ่านเหมือนถูกเลือกไว้ */
+@media (hover:hover){ .tblwrap tbody tr:hover{background:var(--panel-2)} }
+.tblwrap tbody tr:last-child td{border-bottom:0}
+.tblwrap .num{text-align:end; font-variant-numeric:tabular-nums; white-space:nowrap}
+.tblwrap .act{white-space:nowrap; text-align:end}
+/* 🔑 กฎ `.tblwrap th,.tblwrap td{text-align:start}` ข้างบนชนะ `.empty{text-align:center}`
+   (น้ำหนักเท่ากันแต่ประกาศทีหลัง) → สถานะ "ไม่มีข้อมูล" ในตารางจะไปกองอยู่ซ้ายทั้งที่ตั้งใจให้อยู่กลาง */
+.tblwrap td.empty{text-align:center}
+/* ช่องที่ไม่มีค่า (—) ไม่ต้องเด่นเท่าตัวเลขจริง */
+.tblwrap td.num:empty, .tblwrap .dash{color:var(--line-strong)}
+/* ตัวเลขในตารางเรียงหลักตรงกันเสมอ — ตาไล่ยอดลงมาได้โดยไม่ต้องอ่านทีละตัว */
+.tblwrap .num, .tblwrap .code{font-variant-numeric:tabular-nums}
+/* สถานะไม่มีข้อมูล — ใช้ได้ทั้งใน <td> ของตารางและเป็นกล่องเดี่ยว
+   วันแรกที่เปิดใช้ ทุกหน้าคือสถานะนี้ จึงต้องบอกให้ชัดว่า "ยังไม่มีของ" ไม่ใช่ "หาไม่เจอ" */
+.empty{padding:38px 22px; text-align:center; color:var(--muted); font-size:14.5px}
+.empty .ic{display:block; font-size:30px; line-height:1; margin-bottom:10px; opacity:.7}
+.empty b{display:block; font-family:var(--font-head); font-size:16px; font-weight:600;
+         color:var(--ink-soft); margin-bottom:4px}
+.empty .hint{display:block; max-width:46ch; margin-inline:auto; line-height:1.6}
+.empty .btn{margin-top:16px}
+/* กล่องเดี่ยว (ไม่ได้อยู่ในตาราง) — เส้นประบอกว่าที่ตรงนี้รอข้อมูลอยู่ ไม่ใช่การ์ดที่ว่างเปล่า
+   จำกัดความกว้างไว้ ไม่ให้กลายเป็นแถบยาวเต็มจอที่มีข้อความอยู่กลาง ๆ สองบรรทัด */
+.empty.box{background:var(--panel); border:1px dashed var(--line-strong); border-radius:var(--radius);
+           max-width:620px; margin-inline:auto}
+.rowbtn{
+  font:inherit; font-size:13px; cursor:pointer; padding:6px 12px; border-radius:8px; margin-inline-start:6px;
+  border:1px solid var(--line); background:var(--panel); color:var(--ink-soft); white-space:nowrap;
+  transition:background .16s ease, border-color .16s ease, color .16s ease;
+}
+.rowbtn:hover{background:var(--panel-2); border-color:var(--line-strong); color:var(--ink)}
+.rowbtn:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--brand)}
+.rowbtn.pri{border-color:#f0c8c4; color:var(--brand-700); font-weight:700}
+.rowbtn.pri:hover{background:#fff2f3; border-color:var(--brand); color:var(--brand-700)}
+
+/* ---------- กล่องซ้อน ---------- */
+.ov{position:fixed; inset:0; z-index:60; background:rgba(20,22,28,.5);
+    display:flex; align-items:flex-start; justify-content:center; padding:26px 16px; overflow-y:auto}
+.ov[hidden]{display:none}
+.modal{background:var(--panel); border-radius:14px; box-shadow:0 30px 70px -30px rgba(0,0,0,.6);
+       width:100%; max-width:540px; margin:auto}
+.modal.wide{max-width:880px}
+.mhead{display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--line)}
+.mhead h2{font-family:var(--font-head); font-size:17.5px; font-weight:700; margin:0; flex:1}
+.mhead button{font:inherit; font-size:20px; line-height:1; cursor:pointer; border:0; background:none;
+              color:var(--muted); padding:4px 8px; border-radius:8px}
+.mhead button:hover{background:var(--panel-2)}
+.mbody{padding:20px}
+.mfoot{display:flex; gap:10px; justify-content:flex-end; padding:0 20px 20px; flex-wrap:wrap}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:0 14px}
+@media (max-width:520px){ .row2{grid-template-columns:1fr} }
+
+/* กล่องซ้อนที่กลายเป็นหน้าเต็มจอบนมือถือ — งานกรอกยาว ๆ บนจอ 375px
+   ถ้ายังเป็นกล่องลอยจะเหลือพื้นที่จริงน้อยและเลื่อนซ้อนกันสองชั้น */
+@media (max-width:760px){
+  .ov:has(.modal.sheet){padding:0; align-items:stretch}
+  .modal.sheet{
+    max-width:none; border-radius:0; margin:0;
+    min-height:100dvh; display:flex; flex-direction:column;
+  }
+  .modal.sheet .mbody{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch}
+  .modal.sheet .mhead{position:sticky; top:0; background:var(--panel); z-index:2}
+  .modal.sheet .mfoot{
+    position:sticky; bottom:0; background:var(--panel); border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    flex-wrap:wrap;
+  }
+  .modal.sheet .mfoot .btn{flex:1 1 auto; min-height:48px}
+  /* ปุ่มหลักกินเต็มบรรทัดล่างสุด — ชื่อปุ่มภาษาไทยยาว ถ้าวาง 3 ปุ่มเรียงกันจะตัดเป็น 2 บรรทัดทุกปุ่ม
+     และปุ่มที่กดบ่อยที่สุดควรอยู่ล่างสุดซึ่งนิ้วโป้งถึงง่าย */
+  .modal.sheet .mfoot .btn-primary{flex:1 1 100%; order:3; min-height:52px; font-size:16px}
+}
+
+/* รายการเมนูใน "เพิ่มเติม" ของแถบล่าง */
+.morelist{display:grid; gap:8px}
+.moreitem{
+  display:flex; align-items:center; gap:12px; min-height:52px;
+  text-decoration:none; color:inherit; font-size:15.5px;
+  border:1px solid var(--line); border-radius:11px; padding:12px 15px; background:var(--panel);
+}
+.moreitem:hover{background:var(--panel-2)}
+.moreitem .ic{font-size:19px}
+.fhint{font-size:13px; color:var(--muted); margin:-9px 0 14px}
+.merr{background:var(--bad-bg); color:var(--bad); border:1px solid #f3c9c5; border-radius:9px;
+      padding:10px 13px; font-size:14px; margin-bottom:14px}
+.merr[hidden]{display:none}
+
+/* ---------- แท็บ ---------- */
+.tabs{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap}
+.tabs button{
+  font:inherit; font-size:14.5px; cursor:pointer; padding:8px 16px; border-radius:999px;
+  min-height:38px; display:inline-flex; align-items:center; gap:2px;
+  border:1px solid var(--line); background:var(--panel); color:var(--ink-soft);
+  transition:background .16s ease, border-color .16s ease, color .16s ease;
+}
+.tabs button:hover{background:var(--panel-2); border-color:var(--line-strong); color:var(--ink)}
+.tabs button:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--brand)}
+.tabs button[aria-selected=true]:hover{background:#1f2229; color:#fff}
+.tabs button[aria-selected=true]{background:#2b2e36; border-color:#2b2e36; color:#fff; font-weight:700}
+.tabs .n{
+  display:inline-block; min-width:19px; margin-inline-start:6px; padding:0 5px;
+  border-radius:999px; background:var(--brand); color:#fff; font-size:11.5px; font-weight:700;
+}
+
+/* ============================================================
+   ตัวควบคุมของเราเอง — แทนที่ของเบราว์เซอร์ทั้งหมด
+   เหตุผล: หน้าตาของเบราว์เซอร์ต่างกันทุกตัว/ทุก OS แต่งไม่ได้ และเป็นภาษาอังกฤษ
+   ทุกตัวยังเก็บ <select>/<input> ตัวจริงไว้ในหน้า (ซ่อน) เป็นแหล่งค่าเดียว
+   โค้ดเดิมที่อ่าน .value หรือผูก onchange จึงทำงานเหมือนเดิมทุกประการ
+   ============================================================ */
+.nativehide{
+  position:absolute !important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* ---------- ดรอปดาวน์ ---------- */
+.csel{position:relative; display:block; width:100%}
+.csel.auto{display:inline-block; width:auto}
+.csel-btn{
+  display:flex; align-items:center; gap:10px; width:100%; min-height:46px;
+  font:inherit; font-size:16px; text-align:start; cursor:pointer;
+  padding:9px 13px; border-radius:var(--r-sm);
+  border:1px solid var(--line-strong); background:#fff; color:var(--ink);
+  transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.csel-btn:hover{border-color:var(--muted)}
+.csel-btn[aria-expanded=true]{border-color:var(--brand); box-shadow:0 0 0 3px rgba(230,0,18,.12)}
+.csel-btn .lbl{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.csel-btn .lbl.ph{color:var(--muted)}
+.csel-btn .car{
+  flex:0 0 auto; width:9px; height:9px; border-inline-end:2px solid var(--muted);
+  border-block-end:2px solid var(--muted); transform:rotate(45deg) translate(-2px,-2px);
+  transition:transform .2s var(--ease);
+}
+.csel-btn[aria-expanded=true] .car{transform:rotate(-135deg) translate(-3px,-3px)}
+.csel-btn:disabled{opacity:.55; cursor:not-allowed; background:var(--panel-2)}
+
+.csel-pop{
+  position:absolute; z-index:70; inset-inline:0; top:calc(100% + 6px);
+  background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-pop); padding:6px; max-height:290px; overflow-y:auto;
+  animation:popIn .17s var(--ease);
+}
+.csel-pop.up{top:auto; bottom:calc(100% + 6px)}
+.csel-pop[hidden]{display:none}
+@keyframes popIn{from{opacity:0; transform:translateY(-6px) scale(.985)} to{opacity:1; transform:none}}
+.csel-opt{
+  display:flex; align-items:center; gap:9px; width:100%; min-height:44px;
+  font:inherit; font-size:15.5px; text-align:start; cursor:pointer;
+  padding:9px 11px; border:0; border-radius:9px; background:none; color:var(--ink);
+}
+.csel-opt:hover, .csel-opt.cur{background:var(--panel-2)}
+.csel-opt[aria-selected=true]{background:#fdeef0; color:var(--brand-700); font-weight:700}
+.csel-opt .tick{flex:0 0 auto; width:16px; text-align:center; color:var(--brand-700); opacity:0}
+.csel-opt[aria-selected=true] .tick{opacity:1}
+.csel-opt:disabled{opacity:.45; cursor:not-allowed}
+
+/* ---------- ปฏิทิน ---------- */
+.dpick{position:relative; display:block}
+.dpick-btn{
+  display:flex; align-items:center; gap:10px; width:100%; min-height:46px;
+  font:inherit; font-size:16px; text-align:start; cursor:pointer;
+  padding:9px 13px; border-radius:var(--r-sm);
+  border:1px solid var(--line-strong); background:#fff; color:var(--ink);
+}
+.dpick-btn:hover{border-color:var(--muted)}
+.dpick-btn[aria-expanded=true]{border-color:var(--brand); box-shadow:0 0 0 3px rgba(230,0,18,.12)}
+.dpick-btn .lbl{flex:1; min-width:0}
+.dpick-btn .lbl.ph{color:var(--muted)}
+.dpick-btn .ic{flex:0 0 auto; font-size:16px; opacity:.75}
+.dpick-clear{
+  flex:0 0 auto; width:24px; height:24px; border:0; border-radius:50%; cursor:pointer;
+  background:var(--panel-2); color:var(--muted); font-size:14px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.dpick-clear:hover{background:var(--bad-bg); color:var(--bad)}
+/* บนจอสัมผัสไม่แสดงปุ่มล้างเล็ก ๆ ในช่อง — ทำให้ใหญ่พอนิ้วก็จะกินพื้นที่ช่องเกือบหมด
+   คนใช้นิ้วกดล้างที่ปุ่ม "ล้าง" ในปฏิทินซึ่งสูง 40px อยู่แล้ว */
+@media (pointer:coarse){ .dpick-clear{display:none} }
+
+.cal{
+  position:absolute; z-index:70; inset-inline-start:0; top:calc(100% + 6px); width:302px; max-width:92vw;
+  background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-pop); padding:12px; animation:popIn .17s var(--ease);
+}
+.cal.up{top:auto; bottom:calc(100% + 6px)}
+.cal.right{inset-inline-start:auto; inset-inline-end:0}
+.cal[hidden]{display:none}
+.cal-head{display:flex; align-items:center; gap:6px; margin-bottom:10px}
+.cal-head .t{flex:1; text-align:center; font-weight:700; font-size:15.5px}
+.cal-nav{
+  width:36px; height:36px; flex:0 0 auto; border:1px solid var(--line); border-radius:9px;
+  background:#fff; cursor:pointer; font:inherit; font-size:15px; color:var(--ink-soft);
+  display:flex; align-items:center; justify-content:center;
+}
+.cal-nav:hover{background:var(--panel-2)}
+.cal-dow{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px}
+.cal-dow span{text-align:center; font-size:11.5px; font-weight:700; color:var(--muted); padding:4px 0}
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
+.cal-grid button{
+  min-height:38px; padding:0; border:0; border-radius:9px; cursor:pointer;
+  font:inherit; font-size:14.5px; background:none; color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.cal-grid button:hover{background:var(--panel-2)}
+.cal-grid button.out{color:var(--line-strong)}
+.cal-grid button.today{box-shadow:inset 0 0 0 1.5px var(--line-strong); font-weight:700}
+.cal-grid button.sel{background:var(--brand); color:#fff; font-weight:700}
+.cal-grid button.sel:hover{background:var(--brand-700)}
+.cal-foot{display:flex; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line)}
+.cal-foot button{
+  flex:1; min-height:40px; border:1px solid var(--line); border-radius:9px; cursor:pointer;
+  font:inherit; font-size:14px; background:#fff; color:var(--ink-soft);
+}
+.cal-foot button:hover{background:var(--panel-2)}
+/* เลือกเดือน (ใช้กับงวดงบประมาณ) */
+.cal-months{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.cal-months button{
+  min-height:44px; border:1px solid var(--line); border-radius:9px; cursor:pointer;
+  font:inherit; font-size:14.5px; background:#fff; color:var(--ink);
+}
+.cal-months button:hover{background:var(--panel-2)}
+.cal-months button.sel{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:700}
+
+/* ---------- ติ๊กถูก ---------- */
+input[type=checkbox].chk{
+  appearance:none; -webkit-appearance:none; flex:0 0 auto;
+  width:22px; height:22px; margin:0; border-radius:7px; cursor:pointer;
+  border:1.5px solid var(--line-strong); background:#fff; position:relative;
+  transition:background .14s var(--ease), border-color .14s var(--ease);
+}
+input[type=checkbox].chk:hover{border-color:var(--muted)}
+input[type=checkbox].chk:checked{background:var(--ok); border-color:var(--ok)}
+input[type=checkbox].chk:checked::after{
+  content:""; position:absolute; inset-inline-start:7px; top:3px;
+  width:5px; height:10px; border:solid #fff; border-width:0 2.2px 2.2px 0; transform:rotate(43deg);
+}
+
+/* ---------- ช่องค้นหา: ปุ่มล้างของเราเอง ---------- */
+input[type=search]::-webkit-search-cancel-button,
+input[type=search]::-webkit-search-decoration{-webkit-appearance:none; display:none}
+/* กล่องหุ้มต้องยืดได้เอง — เดิมกว้างตามค่าเริ่มต้นของ <input> (~200px)
+   ข้อความบอกใบ้ยาว ๆ อย่าง "ค้นหารหัส ชื่อสินค้า หรือหมวดหมู่" จึงถูกตัดกลางคำทุกหน้า */
+.srch{position:relative; display:block; flex:1 1 260px; min-width:0; max-width:360px}
+.srch > input{padding-inline-end:42px}
+.srch-x{
+  position:absolute; inset-inline-end:8px; top:50%; transform:translateY(-50%);
+  width:28px; height:28px; border:0; border-radius:50%; cursor:pointer;
+  background:var(--panel-2); color:var(--muted); font-size:15px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.srch-x:hover{background:var(--bad-bg); color:var(--bad)}
+.srch-x[hidden]{display:none}
+
+/* ---------- ช่องตัวเลข: ซ่อนลูกศรของเบราว์เซอร์ ---------- */
+input[type=number]{-moz-appearance:textfield; appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.nstep{display:inline-flex; align-items:center; gap:4px}
+.nstep > input{flex:1; min-width:0; text-align:center}
+.nstep button{
+  width:42px; height:42px; flex:0 0 auto; border:1px solid var(--line-strong); border-radius:var(--r-sm);
+  background:#fff; color:var(--ink); font:inherit; font-size:19px; line-height:1; cursor:pointer;
+}
+.nstep button:hover{background:var(--panel-2)}
+
+/* ---------- คำอธิบายเมื่อชี้ (แทน title ของเบราว์เซอร์) ---------- */
+[data-tip]{position:relative}
+[data-tip]::after{
+  content:attr(data-tip); position:absolute; z-index:80; top:calc(100% + 8px); inset-inline-end:0;
+  background:#262224; color:#fff; font-size:12.5px; font-weight:400; line-height:1.45;
+  padding:6px 10px; border-radius:8px; white-space:nowrap; pointer-events:none;
+  opacity:0; transform:translateY(-4px); transition:opacity .16s var(--ease), transform .16s var(--ease);
+  box-shadow:var(--shadow);
+}
+[data-tip]:hover::after, [data-tip]:focus-visible::after{opacity:1; transform:none}
+@media (pointer:coarse){ [data-tip]::after{display:none} }   /* นิ้วไม่มี hover จะค้างบนจอ */
+
+/* ---------- แถบเลื่อนของเราเอง ---------- */
+*{scrollbar-width:thin; scrollbar-color:var(--line-strong) transparent}
+::-webkit-scrollbar{width:11px; height:11px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{
+  background:var(--line-strong); border-radius:99px;
+  border:3px solid transparent; background-clip:content-box;
+}
+::-webkit-scrollbar-thumb:hover{background:var(--muted); background-clip:content-box}
+::selection{background:#ffd9dd; color:var(--ink)}
+
+/* ---------- แจ้งเตือนชั่วคราว (toast) ---------- */
+#toastBox{position:fixed; top:16px; right:16px; z-index:90; display:flex; flex-direction:column; align-items:flex-end; gap:9px}
+#toastBox .toast{
+  background:#23252b; color:#fff; font-size:14.5px;
+  padding:11px 16px; border-radius:10px; box-shadow:0 10px 30px -12px rgba(0,0,0,.6);
+  max-width:min(380px,84vw); animation:toastIn .22s ease;
+}
+#toastBox .toast.bad{background:var(--bad)}
+#toastBox .toast.ok{background:#0b6b42}
+@keyframes toastIn{from{opacity:0; transform:translateX(24px)} to{opacity:1; transform:none}}
+@media (max-width:560px){
+  #toastBox{left:12px; right:12px; align-items:stretch}
+  #toastBox .toast{max-width:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important; transition-duration:.01ms !important}
+}
+
+/* 🔑 บนมือถือบังคับทุกช่องกรอกเป็น 16px ขึ้นไป
+   ต่ำกว่านี้ iOS Safari จะซูมหน้าจอเองทุกครั้งที่แตะช่อง แล้วผู้ใช้ต้องถอยกลับมาเองทุกที
+   หน้าจอคอมยังใช้ขนาดเล็กในตารางแน่น ๆ ได้ตามเดิม */
+@media (max-width:1024px), (pointer:coarse){
+  input:not([type=checkbox]):not([type=radio]), select, textarea{font-size:16px !important}
+}
+
+@media (max-width:640px){
+  /* ใช้ max() เหมือนกฎหลัก ไม่งั้นค่าตรงนี้ไปล้างระยะเผื่อรอยบากที่ตั้งไว้ */
+  .topbar{padding:10px max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left))}
+  .brand-text .sys{white-space:normal}
+  /* จอแคบ แถบหัวขึ้น 2 บรรทัด (โลโก้บน · ปุ่มล่าง) — ดันปุ่มไปชิดขวาสุด
+     อยู่ในระยะนิ้วโป้งของมือที่ถือเครื่อง และไม่ดูเหมือนลอยค้างอยู่ใต้โลโก้ */
+  .nav{width:100%; margin-inline-start:0; justify-content:flex-end}
+  .page{padding:18px max(14px, env(safe-area-inset-right)) 64px max(14px, env(safe-area-inset-left))}
+}
+
+
+/* ============================================================
+   เป้ากดขั้นต่ำบนเครื่องที่ใช้นิ้ว — ต้องอยู่ "ท้ายไฟล์"
+   🔑 media query ไม่ได้เพิ่มน้ำหนักของ selector ถ้าประกาศไว้ต้นไฟล์
+   กฎของชิ้นส่วนที่เขียนทีหลัง (เช่น .tabs button{min-height:38px}) จะชนะแล้วปุ่มเหลือ 42px เงียบ ๆ
+   ============================================================ */
+@media (max-width:1024px), (pointer:coarse) and (max-width:1400px){
+  .nav button{min-height:44px; display:inline-flex; align-items:center}
+  .nav .bell{min-width:44px; justify-content:center}
+  .nav a.help{min-width:44px; min-height:44px}
+  .brand{min-height:44px}
+  .btn{min-height:46px}
+  .tabs button{min-height:46px}
+  .mhead button{min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center}
+  .rowbtn{min-height:44px; padding-inline:14px}
+  .chip{min-height:44px; display:inline-flex; align-items:center}
+  .quick button{min-height:44px}
+  .csel{min-height:46px}
+  .srch-x{width:34px; height:34px; font-size:20px}
+  .moreitem{min-height:56px}
+  /* ปฏิทิน: ช่องวันที่ 38x33px เล็กเกินไปสำหรับนิ้ว — ขยายช่องแล้วกางกล่องให้พอดี 7 ช่อง */
+  .cal{min-width:min(342px, calc(100vw - 24px))}
+  .cal-grid button{min-height:44px}
+  .cal-foot button{min-height:44px}
+}

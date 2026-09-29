@@ -1,0 +1,6 @@
+# เครื่องมือ/ผลลัพธ์ที่ไม่ควรขึ้น repo
+node_modules/
+pgdata/
+*.log
+.env
+.DS_Store

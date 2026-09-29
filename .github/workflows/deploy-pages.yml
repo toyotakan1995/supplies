@@ -1,0 +1,42 @@
+# เผยแพร่หน้าเว็บในโฟลเดอร์ web/ ขึ้น GitHub Pages ทุกครั้งที่ push เข้า main
+name: deploy-pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/deploy-pages.yml']
+  workflow_dispatch:      # กดรันเองได้จากแท็บ Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ที่อยู่ของหลังบ้านไม่ใช่ความลับ (เป็นแค่ URL) แต่เก็บเป็น Variables ของ repo
+      # จะได้เปลี่ยนโปรเจกต์ Supabase ได้โดยไม่ต้องแก้โค้ด — ตั้งที่ Settings → Secrets and variables → Actions → Variables
+      # ไม่ได้ตั้งไว้ = ใช้ค่าที่เขียนไว้ใน web/config.js ตามเดิม
+      - name: ใส่ที่อยู่ API ลงใน config.js
+        if: vars.API_BASE != ''
+        run: |
+          printf 'window.API_BASE = %s;\n' "'${{ vars.API_BASE }}'" > web/config.js
+          cat web/config.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

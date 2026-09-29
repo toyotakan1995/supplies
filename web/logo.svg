@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="Toyota">
+  <ellipse cx="256" cy="256" rx="234" ry="158" stroke="#E60012" stroke-width="40"/>
+  <ellipse cx="256" cy="200" rx="158" ry="48" stroke="#E60012" stroke-width="38"/>
+  <ellipse cx="256" cy="272" rx="56" ry="140" stroke="#E60012" stroke-width="38"/>
+</svg>

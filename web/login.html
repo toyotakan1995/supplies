@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>เข้าสู่ระบบ · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  /* หน้าแรกที่พนักงานเห็นทุกวัน — ให้มีบรรยากาศของแบรนด์ ไม่ใช่การ์ดขาวลอยบนเทาเปล่า ๆ
+     ใช้แสงแดงจาง ๆ 2 จุดจากมุมบน ไม่ใช้ไล่สีเต็มจอ (พื้นแดงเต็มจอจะแย่งความสนใจจากช่องกรอก) */
+  body{
+    display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:24px;
+    background:
+      radial-gradient(680px 340px at 12% -8%, rgba(230,0,18,.10), transparent 62%),
+      radial-gradient(560px 300px at 105% 4%, rgba(230,0,18,.07), transparent 60%),
+      var(--paper);
+  }
+  .login{width:100%; max-width:392px}
+  /* การ์ดฟอร์มยกตัวขึ้นจากพื้นชัดกว่าเดิม (เดิมใช้เงาระดับเดียวกับการ์ดข้อมูลทั่วไป) */
+  .login form{box-shadow:0 24px 48px -30px rgba(27,29,34,.55), 0 2px 6px rgba(27,29,34,.05)}
+  .head{text-align:center; margin-bottom:22px}
+  .head .mk{
+    width:66px; height:66px; margin:0 auto 15px; border-radius:20px; background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 14px 28px -16px rgba(230,0,18,.5), 0 0 0 1px rgba(230,0,18,.08);
+  }
+  .head .mk img{width:40px; height:40px}
+  .head h1{font-size:23px; font-weight:700; margin:0; letter-spacing:-.01em}
+  /* ตัวอักษรบน "พื้นที่มีสีแดงจาง" ต้องเข้มกว่าปกติ — --muted บนพื้นที่ผสมแดงวัดได้ 3.60 ตกเกณฑ์ */
+  .head p{color:var(--ink-soft); font-size:14.5px; margin:4px 0 0}
+  .err{
+    background:var(--bad-bg); color:var(--bad); border:1px solid #f3c9c5;
+    border-radius:10px; padding:11px 14px; font-size:14.5px; margin-bottom:14px;
+  }
+  .err[hidden]{display:none}
+  .note{margin-top:16px; font-size:13.5px; color:var(--muted); text-align:center; line-height:1.7}
+  .note b{color:var(--ink-soft)}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div class="login">
+  <div class="head">
+    <div class="mk"><img src="logo.svg" alt=""></div>
+    <h1>ระบบเบิกอุปกรณ์</h1>
+    <p>โตโยต้า กาญจนบุรี</p>
+  </div>
+
+  <form class="card" id="f" autocomplete="on" novalidate>
+    <div class="err" id="err" hidden></div>
+    <label class="fld">
+      <span>รหัสพนักงาน</span>
+      <input type="text" id="empId" inputmode="numeric" autocomplete="username" required autofocus>
+    </label>
+    <label class="fld">
+      <span>รหัสผ่าน</span>
+      <input type="password" id="pw" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-primary" id="go" style="width:100%">เข้าสู่ระบบ</button>
+    <p class="note">ใช้<b> รหัสพนักงานและรหัสผ่านเดียวกับระบบใบสำคัญจ่าย</b><br>ลืมรหัสผ่าน ติดต่อผู้ดูแลระบบ<br>
+      <a href="guide.html" style="color:var(--brand-700); font-weight:700">📘 ดูวิธีใช้ (มีรูปประกอบ)</a></p>
+  </form>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const err = $('#err');
+
+function showErr(msg){ err.textContent = msg; err.hidden = false; }
+
+$('#f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  err.hidden = true;
+  // ตรวจเอง ไม่ใช้ป๊อปอัปของเบราว์เซอร์ (เป็นภาษาอังกฤษ แต่งไม่ได้ และหายเองเร็ว)
+  if (!$('#empId').value.trim()) { showErr('กรุณากรอกรหัสพนักงาน'); $('#empId').focus(); return; }
+  if (!$('#pw').value) { showErr('กรุณากรอกรหัสผ่าน'); $('#pw').focus(); return; }
+  const btn = $('#go');
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ…';
+  try {
+    const r = await fetch((window.API_BASE || '') + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empId: $('#empId').value.trim(), password: $('#pw').value }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || 'เข้าสู่ระบบไม่สำเร็จ');
+    localStorage.setItem('eq_token', data.token);
+    localStorage.setItem('eq_user', JSON.stringify(data.user));
+    location.href = 'app.html';
+  } catch (ex) {
+    showErr(ex.message);
+    $('#pw').value = ''; $('#pw').focus();
+  } finally {
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+  }
+});
+
+// มี token อยู่แล้วและยังไม่หมดอายุ → ข้ามหน้านี้ไปเลย
+(async () => {
+  const t = localStorage.getItem('eq_token');
+  if (!t) return;
+  const r = await fetch((window.API_BASE || '') + '/api/auth/me', { headers: { Authorization: 'Bearer ' + t } }).catch(() => null);
+  if (r && r.ok) location.href = 'app.html';
+  else { localStorage.removeItem('eq_token'); localStorage.removeItem('eq_user'); }
+})();
+</script>
+</body>
+</html>

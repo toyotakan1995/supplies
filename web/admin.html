@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ผู้ใช้และแผนก · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  .bar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
+  .bar input[type=search]{max-width:340px}
+  .tally{display:flex; gap:7px; flex-wrap:wrap; margin-inline-start:auto}
+
+  table{min-width:760px}
+  td.emp{font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap}
+  td.nm{min-width:180px}
+  td.nm small{display:block; color:var(--muted); font-size:12.5px}
+  select.sm{font-size:14.5px; padding:5px 9px; width:auto; min-width:132px}
+  .off td{opacity:.55}
+  /* ปุ่มปิดบัญชีอยู่ทุกแถว (279 แถว) ถ้าทำเป็นสีแดงทั้งคอลัมน์จะกลายเป็นกำแพงสีแดง
+     และแย่งความสำคัญไปจากช่อง "บทบาท" ซึ่งเป็นงานหลักของหน้านี้ · เก็บสีแดงไว้ที่กล่องยืนยันแทน */
+  .rowbtn.on{color:var(--ink-soft)}
+  .rowbtn.on:hover{color:var(--bad); border-color:#f0c8c4; background:var(--bad-bg)}
+
+  .hint{
+    background:var(--warn-bg); border:1px solid #eddcb8;
+    border-radius:10px; padding:12px 15px; font-size:14.5px; margin-bottom:16px;
+  }
+  .hint b{color:#7a4f04}
+  .hint[hidden]{display:none}
+
+  td.act-log{font-family:ui-monospace,Consolas,monospace; font-size:12.5px; white-space:nowrap}
+  td.detail{max-width:340px; font-size:12.5px; color:var(--muted); word-break:break-all}
+  #auditTbl table{min-width:900px}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar"></header>
+
+<main class="page">
+  <h1>ผู้ใช้และแผนก</h1>
+  <p class="sub">เปลี่ยนบทบาท ปิดสิทธิ์พนักงานที่ลาออก และดูประวัติการใช้งานระบบ</p>
+
+  <div class="hint" id="hintWh" hidden>
+    <b>ยังไม่ได้ตั้งผู้ดูแลคลัง</b> — ตอนนี้ผู้ดูแลระบบทำแทนอยู่
+    · ตั้งบทบาท “ผู้ดูแลคลัง” ให้คนที่ดูแลคลังจริง แล้วแจ้งเตือนจะย้ายไปหาเขาเอง
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true"  data-t="users">พนักงาน</button>
+    <button role="tab" aria-selected="false" data-t="depts">แผนก</button>
+    <button role="tab" aria-selected="false" data-t="audit">ประวัติการใช้งาน</button>
+  </div>
+
+  <section id="pane-users">
+    <div class="bar">
+      <input type="search" id="q" placeholder="ค้นหารหัสพนักงาน ชื่อ หรือแผนก">
+      <span class="tally" id="tally"></span>
+    </div>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>รหัส</th><th>ชื่อ / ตำแหน่ง</th><th>แผนก</th><th>บทบาท</th><th>สถานะ</th></tr></thead>
+        <tbody id="uRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="pane-depts" hidden>
+    <p class="fhint" style="margin:0 0 14px">
+      หัวหน้าแผนกไม่ได้ใช้เดินเอกสารแล้ว (คลังเป็นผู้อนุมัติขั้นเดียว) — เก็บช่องนี้ไว้เผื่ออนาคตอยากได้ด่านหัวหน้าคืน
+    </p>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>แผนก</th><th>พนักงาน</th><th>หัวหน้าแผนก (ยังไม่ใช้งาน)</th></tr></thead>
+        <tbody id="dRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="pane-audit" hidden>
+    <div class="bar">
+      <span class="fhint" style="margin:0">แสดง 200 รายการล่าสุด · ทุกการเปลี่ยนแปลงข้อมูลถูกบันทึกไว้ทั้งหมด</span>
+    </div>
+    <div class="tblwrap" id="auditTbl">
+      <table>
+        <thead><tr><th>เมื่อ</th><th>ใคร</th><th>ทำอะไร</th><th>กับอะไร</th><th>รายละเอียด</th></tr></thead>
+        <tbody id="aRows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+$('#topbar').innerHTML = topbarHTML();
+
+const ACTION_LABEL = {
+  'auth.login':'เข้าสู่ระบบ', 'auth.change_password':'เปลี่ยนรหัสผ่าน',
+  'user.update':'แก้ข้อมูลผู้ใช้', 'dept.set_approver':'ตั้งหัวหน้าแผนก',
+  'category.create':'เพิ่มหมวดหมู่', 'item.create':'เพิ่มสินค้า', 'item.update':'แก้ข้อมูลสินค้า',
+  'stock.receive':'รับของเข้า', 'stock.adjust':'ปรับยอด', 'asset.status':'เปลี่ยนสถานะครุภัณฑ์',
+  'asset.return':'รับคืนครุภัณฑ์', 'asset.remind_overdue':'เตือนของเลยกำหนดคืน',
+  'req.draft':'บันทึกร่างใบเบิก', 'req.draft_update':'แก้ร่างใบเบิก', 'req.draft_delete':'ลบร่างใบเบิก',
+  'req.submit':'ส่งใบเบิก', 'req.cancel':'ยกเลิกใบเบิก',
+  'req.issue':'อนุมัติและจ่ายของ', 'req.reject':'ปฏิเสธใบเบิก', 'budget.set':'ตั้งงบประมาณ',
+};
+
+// ⚠️ ME ประกาศไว้แล้วใน common.js — ประกาศซ้ำจะได้ SyntaxError แล้วทั้งหน้าไม่ทำงาน
+let USERS = [], DEPTS = [];
+
+for (const b of $$('.tabs button')) {
+  b.onclick = () => {
+    for (const x of $$('.tabs button')) x.setAttribute('aria-selected', String(x === b));
+    $('#pane-users').hidden = b.dataset.t !== 'users';
+    $('#pane-depts').hidden = b.dataset.t !== 'depts';
+    $('#pane-audit').hidden = b.dataset.t !== 'audit';
+    if (b.dataset.t === 'audit') loadAudit();
+  };
+}
+
+/* ---------- พนักงาน ---------- */
+function drawUsers() {
+  const tb = $('#uRows'); tb.innerHTML = '';
+  if (!USERS.length) { tb.appendChild(emptyRow(5, 'ไม่พบพนักงานที่ตรงกับคำค้น', 'ค้นได้ด้วยรหัสพนักงาน ชื่อ หรือชื่อแผนก', '🔍')); return; }
+  for (const u of USERS) {
+    const tr = document.createElement('tr');
+    if (!u.active) tr.className = 'off';
+
+    const c1 = document.createElement('td'); c1.className = 'emp'; c1.textContent = u.empId;
+    const c2 = document.createElement('td'); c2.className = 'nm';
+    c2.textContent = u.name;
+    const small = document.createElement('small'); small.textContent = u.position || '—'; c2.appendChild(small);
+    const c3 = document.createElement('td'); c3.textContent = u.dept || '—';
+
+    const c4 = document.createElement('td');
+    const sel = document.createElement('select'); sel.className = 'sm';
+    sel.setAttribute('aria-label', 'บทบาทของ ' + u.name);
+    for (const r of ['employee','approver','warehouse','admin']) {
+      const o = document.createElement('option'); o.value = r; o.textContent = ROLE_LABEL[r];
+      if (u.role === r) o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.onchange = () => save(u, { role: sel.value }, () => { sel.value = u.role; });
+    c4.appendChild(sel);
+
+    const c5 = document.createElement('td');
+    c5.appendChild(rowBtn(u.active ? 'ปิดบัญชี' : 'เปิดใช้งาน', u.active ? 'on' : '', () => save(u, { active: !u.active })));
+
+    tr.append(c1, c2, c3, c4, c5);
+    tb.appendChild(tr);
+  }
+}
+
+async function save(u, patch, revert) {
+  try {
+    await api('/api/admin/users/' + u.id, { method:'PUT', body: JSON.stringify(patch) });
+    toast('บันทึกแล้ว: ' + u.name, 'ok');
+    await loadAll();
+  } catch (e) {
+    toast(e.message, 'bad');
+    if (revert) revert(); else await loadAll();
+  }
+}
+
+/* ---------- แผนก ---------- */
+function drawDepts() {
+  const tb = $('#dRows'); tb.innerHTML = '';
+  const eligible = USERS.filter((u) => u.active && (u.role === 'approver' || u.role === 'admin'));
+  for (const d of DEPTS) {
+    const tr = document.createElement('tr');
+    const c1 = document.createElement('td'); c1.textContent = d.name;
+    const c2 = document.createElement('td'); c2.textContent = d.staff + ' คน';
+
+    const c3 = document.createElement('td');
+    const sel = document.createElement('select'); sel.className = 'sm'; sel.style.minWidth = '260px';
+    sel.setAttribute('aria-label', 'หัวหน้าแผนก ' + d.name);
+    const none = document.createElement('option'); none.value = ''; none.textContent = '— ยังไม่ได้ตั้ง —';
+    sel.appendChild(none);
+    // คนในแผนกนี้ขึ้นก่อน แล้วค่อยคนแผนกอื่น (หัวหน้ามักอยู่แผนกเดียวกัน)
+    for (const u of [...eligible].sort((a, b) => (b.deptId === d.id) - (a.deptId === d.id) || a.name.localeCompare(b.name, 'th'))) {
+      const o = document.createElement('option'); o.value = u.id;
+      o.textContent = u.name + ' · ' + (u.dept || 'ไม่ระบุแผนก');
+      if (d.approverId === u.id) o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.onchange = async () => {
+      try {
+        await api('/api/admin/departments/' + d.id, { method:'PUT', body: JSON.stringify({ approverId: sel.value || null }) });
+        toast('ตั้งหัวหน้าแผนก ' + d.name + ' แล้ว', 'ok');
+        await loadAll();
+      } catch (e) { toast(e.message, 'bad'); sel.value = d.approverId || ''; }
+    };
+    c3.appendChild(sel);
+    tr.append(c1, c2, c3); tb.appendChild(tr);
+  }
+}
+
+/* ---------- ประวัติการใช้งาน ---------- */
+async function loadAudit() {
+  try {
+    const d = await api('/api/admin/audit?limit=200');
+    const tb = $('#aRows'); tb.innerHTML = '';
+    if (!d.rows.length) { tb.appendChild(emptyRow(5, 'ยังไม่มีประวัติการใช้งาน', 'ระบบจะบันทึกทุกครั้งที่มีการจ่ายของ รับคืน หรือแก้สิทธิ์ผู้ใช้', '🕘')); return; }
+    for (const r of d.rows) {
+      const tr = document.createElement('tr');
+      const c1 = document.createElement('td'); c1.textContent = dt(r.at);
+      const c2 = document.createElement('td'); c2.textContent = r.actor;
+      const c3 = document.createElement('td'); c3.textContent = ACTION_LABEL[r.action] || r.action;
+      const c4 = document.createElement('td'); c4.className = 'act-log'; c4.textContent = r.entity || '—';
+      const c5 = document.createElement('td'); c5.className = 'detail'; c5.textContent = r.detail || '—';
+      tr.append(c1, c2, c3, c4, c5); tb.appendChild(tr);
+    }
+  } catch (e) { toast(e.message, 'bad'); }
+}
+
+/* ---------- โหลด ---------- */
+async function loadAll() {
+  const q = $('#q').value.trim();
+  const [uu, dd] = await Promise.all([
+    api('/api/admin/users' + (q ? '?q=' + encodeURIComponent(q) : '')),
+    api('/api/admin/departments'),
+  ]);
+  USERS = uu.users; DEPTS = dd.departments;
+
+  const c = uu.counts || {};
+  $('#tally').innerHTML = '';
+  for (const r of ['employee','approver','warehouse','admin']) {
+    $('#tally').appendChild(pill(ROLE_LABEL[r] + ' ' + (c[r] || 0), r === 'warehouse' && !c[r] ? 'bad' : 'mute'));
+  }
+  $('#hintWh').hidden = !!c.warehouse;
+  drawUsers(); drawDepts();
+}
+
+let timer;
+$('#q').oninput = () => { clearTimeout(timer); timer = setTimeout(loadAll, 250); };
+
+(async () => {
+  try {
+    ME = await initTopbar('admin.html');
+    if (ME.role !== 'admin') {
+      toast('หน้านี้สำหรับผู้ดูแลระบบเท่านั้น', 'bad');
+      return setTimeout(() => location.replace('app.html'), 1400);
+    }
+    await loadAll();
+  } catch (e) {
+    const tb = $('#uRows');   // ตารางผู้ใช้ของหน้านี้ใช้ id uRows ไม่ใช่ rows
+    if (tb) { tb.innerHTML = ''; const tr = document.createElement('tr'); const td = document.createElement('td');
+      td.colSpan = 5; td.appendChild(errorBox(e.message, () => location.reload())); tr.appendChild(td); tb.appendChild(tr); }
+    toast(e.message, 'bad');
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>คู่มือผู้ดูแลคลัง · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  /* คู่มือเล่มนี้เขียนให้ "ผู้ดูแลคลัง" โดยเฉพาะ — คนละเล่มกับ guide.html ที่เขียนให้พนักงานทั่วไป
+     ยึดหลักเดียวกัน: ตัวใหญ่ · 1 บรรทัด 1 เรื่อง · มีภาพประกอบทุกขั้น
+     หน้านี้ไม่โหลด common.js โดยตั้งใจ → เปิดอ่านได้โดยไม่ต้องเข้าสู่ระบบ และส่งลิงก์ทาง LINE ได้ */
+  .lead{font-size:18px; line-height:1.75; color:var(--ink-soft); max-width:48ch; margin:0 0 22px}
+
+  .step{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); padding:20px; margin-bottom:18px;
+  }
+  .step > h2{
+    display:flex; align-items:center; gap:12px; margin:0 0 14px;
+    font-size:21px; font-weight:700; line-height:1.35;
+  }
+  .step .n{
+    flex:0 0 auto; width:42px; height:42px; border-radius:50%;
+    background:linear-gradient(100deg,var(--brand),var(--brand-700)); color:#fff;
+    font-family:var(--font-head); font-size:20px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .step p{margin:0 0 9px; font-size:18px; line-height:1.7}
+  .step p:last-of-type{margin-bottom:0}
+  .step ul{margin:0 0 9px; padding-inline-start:24px}
+  .step li{font-size:18px; line-height:1.7; margin-bottom:5px}
+  .mock{margin-top:16px}
+  .mock svg{width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:12px; background:#fff}
+  .mock figcaption{font-size:14.5px; color:var(--muted); margin-top:7px; text-align:center}
+
+  .tip{
+    display:flex; gap:11px; align-items:flex-start;
+    background:var(--info-bg); border:1px solid #c9dcf5; border-radius:12px;
+    padding:13px 15px; margin-top:14px; font-size:16.5px; line-height:1.65; color:#1c4e86;
+  }
+  .tip .ic{font-size:20px; line-height:1.35}
+  .tip.warn{background:var(--warn-bg); border-color:#eddcb8; color:#7a4f04}
+  .tip.bad{background:var(--bad-bg); border-color:#f0c8c4; color:var(--bad)}
+
+  h2.sec{font-size:20px; margin:34px 0 14px}
+  table.words{width:100%; border-collapse:collapse; background:var(--panel);
+              border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow)}
+  table.words th, table.words td{padding:13px 15px; text-align:start; border-bottom:1px solid var(--line);
+                                 font-size:16.5px; vertical-align:top}
+  table.words th{background:var(--panel-2); font-family:var(--font-head); font-size:14px; font-weight:600; color:var(--muted)}
+  table.words tr:last-child td{border-bottom:0}
+  table.words .pill{font-size:14px}
+
+  .qa{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:4px 18px; box-shadow:var(--shadow)}
+  .qa details{border-bottom:1px solid var(--line); padding:14px 0}
+  .qa details:last-child{border-bottom:0}
+  .qa summary{font-size:17.5px; font-weight:700; cursor:pointer; list-style:none; display:flex; gap:10px; align-items:center}
+  .qa summary::-webkit-details-marker{display:none}
+  .qa summary::before{content:"❓"; font-size:17px}
+  .qa p{margin:10px 0 0 27px; font-size:16.5px; line-height:1.7; color:var(--ink-soft)}
+
+  /* กฎที่ต้องจำ — อ่านเป็นข้อ ๆ ติดบอร์ดที่คลังได้ */
+  .rules{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+         box-shadow:var(--shadow); padding:6px 18px}
+  .rules .r{display:flex; gap:14px; align-items:flex-start; padding:15px 0; border-bottom:1px solid var(--line)}
+  .rules .r:last-child{border-bottom:0}
+  /* ต้องเป็นลูกตรง (>) เท่านั้น — ข้อความในกฎมี <b> เน้นคำอยู่ข้างใน <span> ด้วย
+     ถ้าเขียน `.rules .r b` เฉย ๆ คำที่เน้นจะกลายเป็นกล่องเลข 30px แล้วข้อความถูกตัด */
+  .rules .r > b{flex:0 0 auto; width:30px; height:30px; border-radius:9px; background:var(--panel-2);
+              font-family:var(--font-head); font-size:15px; color:var(--brand-700);
+              display:flex; align-items:center; justify-content:center}
+  .rules .r span{font-size:17px; line-height:1.65}
+
+  .backrow{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px}
+
+  @media print{
+    .topbar, .backrow, .noprint{display:none !important}
+    .page{padding:0}
+    .step, .qa, .rules, table.words{box-shadow:none; break-inside:avoid}
+    .qa details{display:block}
+    body{background:#fff}
+  }
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="app.html">
+    <span class="brandmark"><img src="logo.svg" alt=""></span>
+    <span class="brand-text"><span class="co">โตโยต้า กาญจนบุรี</span><br>
+    <span class="sys">ระบบเบิกอุปกรณ์</span></span>
+  </a>
+</header>
+
+<main class="page narrow">
+  <h1>คู่มือผู้ดูแลคลัง</h1>
+  <p class="lead">งานของคุณมี 3 อย่าง<br>
+    <b>1.</b> จ่ายของให้พนักงานที่มารับ<br>
+    <b>2.</b> ทำให้ยอดในระบบตรงกับของบนชั้น<br>
+    <b>3.</b> รับคืนครุภัณฑ์ที่ยืมออกไป</p>
+
+  <div class="backrow">
+    <a class="btn btn-primary" href="app.html">ไปที่ระบบ</a>
+    <a class="btn btn-ghost" href="guide.html">คู่มือพนักงาน</a>
+    <button class="btn btn-ghost noprint" onclick="window.print()">🖨️ พิมพ์คู่มือ</button>
+  </div>
+
+  <section class="step">
+    <h2><span class="n">☰</span> เมนูของคุณมี 4 อัน</h2>
+    <p>พอเข้าระบบ คุณจะเห็นเมนูมากกว่าพนักงานทั่วไป</p>
+    <p>บนคอมอยู่<b>แถบบนสุด</b> · บนมือถืออยู่<b>แถบล่างจอ</b></p>
+    <div class="mock">
+      <svg viewBox="0 0 600 268" role="img" aria-label="เมนู 4 อันของผู้ดูแลคลัง">
+        <rect width="600" height="268" fill="#fff"/>
+        <rect x="20" y="16" width="560" height="58" rx="12" fill="#fdf3e0" stroke="#eddcb8"/>
+        <text x="42" y="52" font-size="22">✅</text>
+        <text x="80" y="42" font-size="15" font-weight="700" fill="#1d1a1c">อนุมัติและจ่ายของ</text>
+        <text x="80" y="65" font-size="12.5" fill="#6b6469">พนักงานมารับของ — เปิดใบของเขาแล้วกดจ่าย</text>
+        <rect x="20" y="82" width="560" height="58" rx="12" fill="#f7f5f6" stroke="#e6e1e3"/>
+        <text x="42" y="118" font-size="22">🏷️</text>
+        <text x="80" y="108" font-size="15" font-weight="700" fill="#1d1a1c">สินค้าและสต็อก</text>
+        <text x="80" y="131" font-size="12.5" fill="#6b6469">เพิ่มของใหม่ · รับของเข้า · ปรับยอดให้ตรงชั้น</text>
+        <rect x="20" y="148" width="560" height="58" rx="12" fill="#f7f5f6" stroke="#e6e1e3"/>
+        <text x="42" y="184" font-size="22">🔧</text>
+        <text x="80" y="172" font-size="15" font-weight="700" fill="#1d1a1c">ครุภัณฑ์</text>
+        <text x="80" y="199" font-size="12.5" fill="#6b6469">ดูว่าใครถืออะไรอยู่ · กดรับคืนเมื่อเอามาส่ง</text>
+        <rect x="20" y="214" width="560" height="42" rx="12" fill="#f7f5f6" stroke="#e6e1e3"/>
+        <text x="42" y="242" font-size="20">📊</text>
+        <text x="80" y="241" font-size="15" font-weight="700" fill="#1d1a1c">รายงาน — สรุปว่าใครเบิกอะไรไปเท่าไร</text>
+      </svg>
+      <figcaption>เมนู 4 อันนี้ พนักงานทั่วไปไม่เห็น</figcaption>
+    </div>
+    <div class="tip"><span class="ic">🔔</span><span>เลขสีแดงบน<b>กระดิ่ง</b> คือใบเบิกที่รอคุณจ่ายของ กดที่กระดิ่งแล้วไปที่ใบได้เลย</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">1</span> วันแรก: คีย์ของเข้าระบบ</h2>
+    <p>ทำครั้งเดียวตอนเริ่มใช้ · ของที่ยังไม่มีในระบบ พนักงานเบิกไม่ได้</p>
+    <p>ไปเมนู <b>สินค้าและสต็อก</b> แล้วกด <b>+ เพิ่มสินค้า</b></p>
+    <p>กรอก <b>รหัสสินค้า</b> กับ <b>ชื่อสินค้า</b> ให้ครบ ที่เหลือใส่เท่าที่รู้</p>
+    <div class="mock">
+      <svg viewBox="0 0 600 316" role="img" aria-label="ตัวอย่างฟอร์มเพิ่มสินค้า">
+        <rect width="600" height="316" fill="#fff"/>
+        <text x="24" y="38" font-size="16" font-weight="700" fill="#1d1a1c">เพิ่มสินค้า</text>
+        <text x="24" y="74" font-size="12.5" font-weight="700" fill="#524c50">รหัสสินค้า</text>
+        <rect x="24" y="84" width="252" height="36" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="38" y="108" font-size="14" fill="#1d1a1c">PEN-001</text>
+        <text x="324" y="74" font-size="12.5" font-weight="700" fill="#524c50">หน่วยนับ</text>
+        <rect x="324" y="84" width="252" height="36" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="338" y="108" font-size="14" fill="#1d1a1c">ด้าม</text>
+        <text x="24" y="152" font-size="12.5" font-weight="700" fill="#524c50">ชื่อสินค้า</text>
+        <rect x="24" y="162" width="552" height="36" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="38" y="186" font-size="14" fill="#1d1a1c">ปากกาลูกลื่น สีน้ำเงิน</text>
+        <text x="24" y="230" font-size="12.5" font-weight="700" fill="#524c50">ประเภท — เลือกให้ถูกตั้งแต่แรก</text>
+        <rect x="24" y="240" width="252" height="42" rx="9" fill="#fff2f3" stroke="#e60012" stroke-width="2"/>
+        <text x="150" y="267" font-size="13.5" font-weight="700" text-anchor="middle" fill="#b3000e">ของสิ้นเปลือง</text>
+        <rect x="324" y="240" width="252" height="42" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="450" y="267" font-size="13.5" text-anchor="middle" fill="#524c50">ครุภัณฑ์</text>
+        <text x="24" y="304" font-size="12.5" fill="#6b6469">ปากกา กระดาษ น้ำยา = ของสิ้นเปลือง · สว่าน โน้ตบุ๊ก = ครุภัณฑ์</text>
+      </svg>
+    </div>
+    <div class="tip warn"><span class="ic">⚠️</span><span>เลือก<b>ประเภท</b>ให้ถูกตั้งแต่แรก — พอมีประวัติการเคลื่อนไหวแล้ว เปลี่ยนประเภทไม่ได้อีก<br>เพิ่งคีย์ผิดและยังไม่ได้ <b>รับเข้า</b> → กดที่รายการนั้น แล้วกด <b>🗑️ ลบรายการนี้</b> คีย์ใหม่ได้เลย</span></div>
+    <div class="tip"><span class="ic">📷</span><span>ใส่<b>รูปสินค้า</b>ด้วยจะดีมาก ถ่ายจากมือถือได้เลย พนักงานจะหยิบของถูกกว่าเดิมเยอะ</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">2</span> บันทึกของที่มีอยู่จริง</h2>
+    <p>เพิ่มสินค้าเสร็จ ยอดจะเป็น <b>0</b> เสมอ · ยังเบิกไม่ได้</p>
+    <p>ต้องกด <b>รับเข้า</b> แล้วใส่จำนวนที่มีอยู่บนชั้นจริง</p>
+    <p>ของที่ซื้อเข้ามาใหม่ทุกครั้ง ก็กด <b>รับเข้า</b> อันนี้เหมือนกัน</p>
+    <div class="mock">
+      <svg viewBox="0 0 600 246" role="img" aria-label="รับของเข้า ของสิ้นเปลืองกับครุภัณฑ์ต่างกัน">
+        <rect width="600" height="246" fill="#fff"/>
+        <rect x="20" y="18" width="266" height="210" rx="12" fill="#fff" stroke="#e6e1e3"/>
+        <text x="40" y="48" font-size="14" font-weight="700" fill="#1d1a1c">ของสิ้นเปลือง</text>
+        <text x="40" y="74" font-size="12.5" fill="#6b6469">ใส่เป็นตัวเลข</text>
+        <text x="40" y="110" font-size="12.5" font-weight="700" fill="#524c50">จำนวนที่รับเข้า</text>
+        <rect x="40" y="120" width="226" height="40" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="56" y="146" font-size="15" fill="#1d1a1c">120</text>
+        <text x="250" y="146" font-size="13" text-anchor="end" fill="#6b6469">ด้าม</text>
+        <rect x="40" y="174" width="226" height="38" rx="10" fill="#e60012"/>
+        <text x="153" y="199" font-size="14" font-weight="700" text-anchor="middle" fill="#fff">บันทึกรับเข้า</text>
+        <rect x="314" y="18" width="266" height="210" rx="12" fill="#fff" stroke="#e6e1e3"/>
+        <text x="334" y="48" font-size="14" font-weight="700" fill="#1d1a1c">ครุภัณฑ์</text>
+        <text x="334" y="74" font-size="12.5" fill="#6b6469">พิมพ์เลขครุภัณฑ์ บรรทัดละ 1 เลข</text>
+        <rect x="334" y="88" width="226" height="94" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="350" y="116" font-size="13" fill="#1d1a1c">TKC-DRL-001</text>
+        <text x="350" y="142" font-size="13" fill="#1d1a1c">TKC-DRL-002</text>
+        <text x="350" y="168" font-size="13" fill="#1d1a1c">TKC-DRL-003</text>
+        <text x="334" y="202" font-size="12.5" fill="#6b6469">= ได้ของ 3 ชิ้น ระบบตามได้ว่าชิ้นไหน</text>
+        <text x="334" y="224" font-size="12.5" fill="#6b6469">อยู่กับใคร</text>
+      </svg>
+    </div>
+    <div class="tip"><span class="ic">💡</span><span>เลขครุภัณฑ์คือเลขที่<b>ติดอยู่บนตัวของ</b> จะได้รู้ว่าชิ้นที่จ่ายไปคือชิ้นไหน</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">3</span> งานประจำวัน: จ่ายของ</h2>
+    <p>พนักงานส่งใบไว้ในระบบ แล้วเดินมาที่คลัง</p>
+    <p>เปิดเมนู <b>อนุมัติและจ่ายของ</b> จะเห็นใบที่รออยู่</p>
+    <p>หาใบของเขาด้วย <b>ชื่อ</b> หรือ <b>รหัสพนักงาน</b> ก็ได้ แล้วกดที่ใบ</p>
+    <div class="mock">
+      <svg viewBox="0 0 600 214" role="img" aria-label="รายการใบเบิกที่รอจ่ายของ">
+        <rect width="600" height="214" fill="#fff"/>
+        <rect x="20" y="16" width="400" height="38" rx="10" fill="#fff" stroke="#d8d3d5"/>
+        <text x="40" y="41" font-size="13.5" fill="#6b6469">🔍  ค้นหาชื่อ รหัสพนักงาน หรือเลขที่ใบ</text>
+        <rect x="436" y="16" width="144" height="38" rx="10" fill="#fdf3e0" stroke="#eddcb8"/>
+        <text x="508" y="41" font-size="13.5" font-weight="700" text-anchor="middle" fill="#7a4f04">รอจ่ายของ 2 ใบ</text>
+        <rect x="20" y="70" width="560" height="60" rx="12" fill="#fff" stroke="#e6e1e3"/>
+        <text x="40" y="98" font-size="14" font-weight="700" fill="#1d1a1c">RQ-2608-002 · สมชาย ใจดี</text>
+        <text x="40" y="122" font-size="12.5" fill="#6b6469">แผนกบริการ · ปากกา 2 ด้าม, กระดาษ A4 1 รีม</text>
+        <rect x="452" y="86" width="108" height="30" rx="15" fill="#fdf3e0"/>
+        <text x="506" y="106" font-size="12.5" font-weight="700" text-anchor="middle" fill="#7a4f04">รอคลังจ่ายของ</text>
+        <rect x="20" y="140" width="560" height="60" rx="12" fill="#fff" stroke="#e6e1e3"/>
+        <text x="40" y="168" font-size="14" font-weight="700" fill="#1d1a1c">RQ-2608-003 · มานี รักงาน</text>
+        <text x="40" y="192" font-size="12.5" fill="#6b6469">แผนกอะไหล่ · สว่านไฟฟ้า 1 ชิ้น</text>
+        <rect x="452" y="156" width="108" height="30" rx="15" fill="#fdf3e0"/>
+        <text x="506" y="176" font-size="12.5" font-weight="700" text-anchor="middle" fill="#7a4f04">รอคลังจ่ายของ</text>
+      </svg>
+    </div>
+    <div class="tip"><span class="ic">☕</span><span>ไม่มีใบเลย = คิวว่าง ยังไม่มีใครส่งมา ไม่ต้องทำอะไร</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">4</span> ใส่จำนวนที่จ่ายจริง แล้วกดปุ่มแดง</h2>
+    <p>เปิดใบมาแล้ว จะเห็นว่าเขา<b>ขอมา</b>กี่ชิ้น</p>
+    <p>ช่อง <b>จ่ายจริง</b> ระบบใส่เท่าที่เขาขอไว้ให้แล้ว</p>
+    <p>ของไม่พอ ก็แก้ตัวเลขให้ตรงกับที่หยิบให้จริง</p>
+    <p>หยิบของครบแล้ว ค่อยกด <b>อนุมัติและจ่ายของ</b></p>
+    <div class="mock">
+      <svg viewBox="0 0 600 288" role="img" aria-label="หน้าจ่ายของ ใส่จำนวนจ่ายจริงแล้วกดอนุมัติ">
+        <rect width="600" height="288" fill="#fff"/>
+        <text x="24" y="36" font-size="15" font-weight="700" fill="#1d1a1c">ใบเบิก RQ-2608-002 · สมชาย ใจดี</text>
+        <text x="24" y="60" font-size="12.5" fill="#6b6469">เหตุผล: ใช้ในงานประจำวันของแผนก</text>
+        <rect x="24" y="76" width="552" height="34" rx="8" fill="#f7f5f6"/>
+        <text x="40" y="98" font-size="12.5" font-weight="600" fill="#6b6469">สินค้า</text>
+        <text x="390" y="98" font-size="12.5" font-weight="600" text-anchor="end" fill="#6b6469">ขอมา</text>
+        <text x="470" y="98" font-size="12.5" font-weight="600" fill="#6b6469">จ่ายจริง</text>
+        <text x="40" y="140" font-size="13.5" fill="#1d1a1c">ปากกาลูกลื่น สีน้ำเงิน</text>
+        <text x="390" y="140" font-size="13.5" text-anchor="end" fill="#1d1a1c">2 ด้าม</text>
+        <rect x="470" y="122" width="90" height="34" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="515" y="145" font-size="14" font-weight="700" text-anchor="middle" fill="#1d1a1c">2</text>
+        <line x1="24" y1="166" x2="576" y2="166" stroke="#e6e1e3"/>
+        <text x="40" y="194" font-size="13.5" fill="#1d1a1c">กระดาษ A4</text>
+        <text x="390" y="194" font-size="13.5" text-anchor="end" fill="#1d1a1c">3 รีม</text>
+        <rect x="470" y="176" width="90" height="34" rx="9" fill="#fff" stroke="#e60012" stroke-width="2"/>
+        <text x="515" y="199" font-size="14" font-weight="700" text-anchor="middle" fill="#b3000e">1</text>
+        <text x="40" y="222" font-size="12" fill="#7a4f04">มีอยู่แค่ 1 รีม จ่ายเท่าที่มี</text>
+        <rect x="24" y="238" width="330" height="42" rx="11" fill="#e60012"/>
+        <text x="189" y="265" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">อนุมัติและจ่ายของ</text>
+        <rect x="370" y="238" width="206" height="42" rx="11" fill="#fdeceb" stroke="#f0c8c4"/>
+        <text x="473" y="265" font-size="15" font-weight="700" text-anchor="middle" fill="#b3251a">ปฏิเสธใบนี้</text>
+      </svg>
+      <figcaption>ของไม่พอ ก็แก้ช่อง “จ่ายจริง” ให้ตรงกับที่หยิบให้</figcaption>
+    </div>
+    <div class="tip bad"><span class="ic">🛑</span><span><b>ยอดในระบบตัดตอนกดปุ่มแดงครั้งเดียว</b> · หยิบของให้ครบและตรวจให้เรียบร้อยก่อนกด กดแล้วแก้เองไม่ได้</span></div>
+    <div class="tip warn"><span class="ic">⚠️</span><span>จ่ายไม่ครบ ใบจะปิดเป็น <b>ได้บางส่วน</b> · ส่วนที่ยังขาด ให้พนักงาน<b>เปิดใบใหม่</b> ใบเดิมกลับมาจ่ายเพิ่มไม่ได้</span></div>
+    <div class="tip"><span class="ic">🚫</span><span>ไม่จ่ายเลย ให้กด <b>ปฏิเสธใบนี้</b> และต้อง<b>เขียนเหตุผล</b>ในช่องหมายเหตุ พนักงานจะได้อ่านเหตุผล</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">5</span> ครุภัณฑ์: จ่ายแล้วต้องได้คืน</h2>
+    <p>ตอนจ่ายครุภัณฑ์ ให้ใส่ <b>กำหนดคืน</b> ไว้ด้วย</p>
+    <p>พอเขาเอามาส่ง ไปเมนู <b>ครุภัณฑ์</b> หาชื่อคนนั้น แล้วกด <b>รับคืน</b></p>
+    <p>ดูสภาพของก่อน แล้วเลือก 1 ใน 2 ข้อ</p>
+    <div class="mock">
+      <svg viewBox="0 0 600 232" role="img" aria-label="หน้ารับคืนครุภัณฑ์ เลือกสภาพของ">
+        <rect width="600" height="232" fill="#fff"/>
+        <text x="24" y="38" font-size="15" font-weight="700" fill="#1d1a1c">รับคืนครุภัณฑ์ · TKC-DRL-001 สว่านไฟฟ้า</text>
+        <text x="24" y="62" font-size="12.5" fill="#6b6469">อยู่กับ มานี รักงาน · รับไปเมื่อ 12 ส.ค. 68</text>
+        <rect x="24" y="80" width="552" height="54" rx="11" fill="#eaf6f0" stroke="#bfe3d0"/>
+        <circle cx="50" cy="107" r="9" fill="#0f7f4f"/>
+        <circle cx="50" cy="107" r="3.5" fill="#fff"/>
+        <text x="74" y="103" font-size="14" font-weight="700" fill="#0b6b42">ปกติ พร้อมใช้งานต่อ</text>
+        <text x="74" y="124" font-size="12.5" fill="#524c50">ของกลับเข้าคลัง คนอื่นเบิกต่อได้ทันที</text>
+        <rect x="24" y="142" width="552" height="54" rx="11" fill="#fff" stroke="#e6e1e3"/>
+        <circle cx="50" cy="169" r="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="74" y="165" font-size="14" font-weight="700" fill="#1d1a1c">ต้องส่งซ่อมก่อน</text>
+        <text x="74" y="186" font-size="12.5" fill="#524c50">ของยังไม่กลับเข้าคลัง ไม่มีใครเบิกไปได้</text>
+        <rect x="24" y="204" width="200" height="18" rx="6" fill="#fff"/>
+        <text x="24" y="218" font-size="12.5" fill="#6b6469">แล้วกด “บันทึกรับคืน”</text>
+      </svg>
+    </div>
+    <div class="tip warn"><span class="ic">🔧</span><span>เลือก <b>ต้องส่งซ่อม</b> แล้ว ของจะค้างอยู่แบบนั้นจนกว่าคุณจะไปเปลี่ยนสถานะเป็น <b>พร้อมใช้งาน</b> ที่หน้า <b>สินค้าและสต็อก</b></span></div>
+    <div class="tip"><span class="ic">📣</span><span>ปุ่ม <b>เตือนคนที่เลยกำหนดคืน</b> อยู่บนหัวหน้าครุภัณฑ์ · กดทีเดียวเตือนทุกคนที่ค้างของ</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">6</span> ของใกล้หมด ระบบเตือนให้เอง</h2>
+    <p>ตอนเพิ่มสินค้า มีช่อง <b>จุดสั่งซื้อขั้นต่ำ</b></p>
+    <p>ใส่ไว้ว่าเหลือเท่าไรถึงต้องสั่งเพิ่ม เช่น ปากกาเหลือ 20 ด้าม</p>
+    <p>พอของตกลงมาต่ำกว่านั้น ระบบเตือนที่<b>กระดิ่ง</b>และขึ้นที่<b>หน้าแรก</b></p>
+    <div class="mock">
+      <svg viewBox="0 0 600 172" role="img" aria-label="รายการของที่ใกล้หมด">
+        <rect width="600" height="172" fill="#fff"/>
+        <rect x="20" y="16" width="264" height="70" rx="12" fill="#fdf3e0" stroke="#eddcb8"/>
+        <text x="40" y="44" font-size="13" fill="#7a4f04">ของใกล้หมด</text>
+        <text x="40" y="76" font-size="22" font-weight="700" fill="#1d1a1c">3 รายการ</text>
+        <rect x="304" y="16" width="276" height="70" rx="12" fill="#f7f5f6" stroke="#e6e1e3"/>
+        <text x="324" y="44" font-size="13" fill="#6b6469">รอฉันจ่ายของ</text>
+        <text x="324" y="76" font-size="22" font-weight="700" fill="#1d1a1c">2 ใบ</text>
+        <rect x="20" y="96" width="560" height="58" rx="12" fill="#fff" stroke="#e6e1e3"/>
+        <text x="40" y="122" font-size="13.5" font-weight="700" fill="#1d1a1c">PEN-001 · ปากกาลูกลื่น สีน้ำเงิน</text>
+        <text x="40" y="147" font-size="12.5" fill="#6b6469">เบิกได้ 12 ด้าม · จุดสั่งซื้อ 20 ด้าม</text>
+        <rect x="470" y="112" width="90" height="28" rx="14" fill="#fdf3e0"/>
+        <text x="515" y="131" font-size="12.5" font-weight="700" text-anchor="middle" fill="#7a4f04">ใกล้หมด</text>
+      </svg>
+    </div>
+    <div class="tip"><span class="ic">💡</span><span>ใส่ <b>0</b> ในช่องจุดสั่งซื้อ = ไม่ต้องเตือนของตัวนั้น</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">7</span> นับของแล้วไม่ตรง: ปรับยอด</h2>
+    <p>ของหาย ของแตก หรือเคยลืมบันทึก ยอดในระบบจะไม่ตรงกับชั้น</p>
+    <p>เปิดรายการนั้น กด <b>ปรับยอด</b></p>
+    <p>ใส่ <b>ยอดที่นับได้จริง</b> ระบบคิดผลต่างให้เอง</p>
+    <p>ต้องเขียน<b>เหตุผล</b>ทุกครั้ง เพราะเป็นทางเดียวที่แก้ยอดได้โดยของไม่ได้เคลื่อนไหวจริง</p>
+    <div class="mock">
+      <svg viewBox="0 0 600 236" role="img" aria-label="หน้าปรับยอดให้ตรงกับที่นับได้">
+        <rect width="600" height="236" fill="#fff"/>
+        <text x="24" y="38" font-size="15" font-weight="700" fill="#1d1a1c">ปรับยอด · ปากกาลูกลื่น สีน้ำเงิน</text>
+        <rect x="24" y="56" width="264" height="62" rx="11" fill="#f7f5f6" stroke="#e6e1e3"/>
+        <text x="44" y="82" font-size="12.5" fill="#6b6469">ยอดในระบบตอนนี้</text>
+        <text x="44" y="107" font-size="18" font-weight="700" fill="#1d1a1c">12 ด้าม</text>
+        <rect x="312" y="56" width="264" height="62" rx="11" fill="#fff" stroke="#e60012" stroke-width="2"/>
+        <text x="332" y="82" font-size="12.5" fill="#6b6469">ยอดที่นับได้จริง</text>
+        <text x="332" y="107" font-size="18" font-weight="700" fill="#b3000e">9 ด้าม</text>
+        <text x="24" y="146" font-size="12.5" font-weight="700" fill="#524c50">เหตุผลที่ปรับ (ต้องกรอก)</text>
+        <rect x="24" y="156" width="552" height="40" rx="9" fill="#fff" stroke="#d8d3d5"/>
+        <text x="40" y="181" font-size="13.5" fill="#1d1a1c">นับสต็อกประจำเดือน พบขาด 3 ด้าม</text>
+        <text x="24" y="220" font-size="12.5" fill="#6b6469">ระบบจะบันทึกไว้ว่าใครปรับ เมื่อไร เพราะอะไร</text>
+      </svg>
+    </div>
+    <div class="tip"><span class="ic">📈</span><span>ทุกครั้งที่<b>รับเข้า จ่ายออก รับคืน ปรับยอด</b> จะมีบรรทัดเก็บไว้ในหน้ารายละเอียดสินค้า ย้อนดูได้ตลอด</span></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">8</span> รายงาน: ใครเบิกอะไรไปเท่าไร</h2>
+    <p>เมนู <b>รายงาน</b> เลือกช่วงวันที่ที่อยากดู</p>
+    <p>ดูได้ว่า<b>แผนกไหน</b>เบิกไปเท่าไร ใครเบิกเยอะสุด ของอะไรถูกเบิกบ่อยสุด</p>
+    <p>อยากเอาไปทำต่อใน Excel กด <b>⬇ CSV</b></p>
+    <div class="mock">
+      <svg viewBox="0 0 600 186" role="img" aria-label="หน้ารายงาน">
+        <rect width="600" height="186" fill="#fff"/>
+        <rect x="20" y="16" width="112" height="34" rx="17" fill="#fff2f3" stroke="#e60012"/>
+        <text x="76" y="38" font-size="13" font-weight="700" text-anchor="middle" fill="#b3000e">30 วันล่าสุด</text>
+        <rect x="142" y="16" width="92" height="34" rx="17" fill="#fff" stroke="#e6e1e3"/>
+        <text x="188" y="38" font-size="13" text-anchor="middle" fill="#524c50">เดือนนี้</text>
+        <rect x="244" y="16" width="80" height="34" rx="17" fill="#fff" stroke="#e6e1e3"/>
+        <text x="284" y="38" font-size="13" text-anchor="middle" fill="#524c50">ปีนี้</text>
+        <rect x="424" y="16" width="156" height="34" rx="10" fill="#f7f5f6" stroke="#e6e1e3"/>
+        <text x="502" y="38" font-size="13" font-weight="700" text-anchor="middle" fill="#524c50">⬇ ใบเบิก (CSV)</text>
+        <rect x="20" y="64" width="560" height="34" rx="8" fill="#f7f5f6"/>
+        <text x="40" y="86" font-size="12.5" font-weight="600" fill="#6b6469">แผนก</text>
+        <text x="400" y="86" font-size="12.5" font-weight="600" text-anchor="end" fill="#6b6469">จำนวนใบ</text>
+        <text x="556" y="86" font-size="12.5" font-weight="600" text-anchor="end" fill="#6b6469">มูลค่าที่เบิก</text>
+        <text x="40" y="124" font-size="13.5" fill="#1d1a1c">แผนกบริการ</text>
+        <text x="400" y="124" font-size="13.5" text-anchor="end" fill="#1d1a1c">18</text>
+        <text x="556" y="124" font-size="13.5" text-anchor="end" fill="#1d1a1c">฿ 12,400</text>
+        <line x1="20" y1="136" x2="580" y2="136" stroke="#e6e1e3"/>
+        <text x="40" y="164" font-size="13.5" fill="#1d1a1c">แผนกอะไหล่</text>
+        <text x="400" y="164" font-size="13.5" text-anchor="end" fill="#1d1a1c">11</text>
+        <text x="556" y="164" font-size="13.5" text-anchor="end" fill="#1d1a1c">฿ 8,150</text>
+      </svg>
+    </div>
+    <div class="tip warn"><span class="ic">💰</span><span>แผนกไหน<b>ใช้เกินงบ</b> ระบบจะขึ้นเตือนให้เห็น แต่<b>ไม่บล็อกการเบิก</b> · ตัดสินใจเองว่าจะจ่ายไหม</span></div>
+  </section>
+
+  <h2 class="sec">คำที่ขึ้นบนจอ แปลว่าอะไร</h2>
+  <table class="words">
+    <tr><th>คำที่เห็น</th><th>แปลว่า</th><th>คุณต้องทำอะไร</th></tr>
+    <tr><td><span class="pill warn">รอคลังจ่ายของ</span></td><td>พนักงานส่งใบมาแล้ว</td><td>เปิดใบ หยิบของ แล้วกดจ่าย</td></tr>
+    <tr><td><span class="pill ok">รับของแล้ว</span></td><td>จ่ายครบตามที่ขอ</td><td>จบแล้ว ไม่ต้องทำอะไร</td></tr>
+    <tr><td><span class="pill info">ได้บางส่วน</span></td><td>จ่ายไม่ครบ ใบปิดแล้ว</td><td>ถ้ามีของเพิ่ม บอกเขาให้เปิดใบใหม่</td></tr>
+    <tr><td><span class="pill bad">ถูกปฏิเสธ</span></td><td>คุณไม่จ่ายใบนี้</td><td>จบแล้ว เหตุผลที่เขียนไว้เขาอ่านได้</td></tr>
+    <tr><td><span class="pill mute">ร่าง</span></td><td>เขายังไม่ได้ส่งใบ</td><td>ไม่ต้องทำอะไร คุณยังมองไม่เห็นใบนี้</td></tr>
+  </table>
+
+  <h2 class="sec">สถานะของครุภัณฑ์แต่ละชิ้น</h2>
+  <table class="words">
+    <tr><th>สถานะ</th><th>แปลว่า</th></tr>
+    <tr><td><span class="pill ok">พร้อมใช้งาน</span></td><td>อยู่ในคลัง จ่ายให้คนอื่นได้</td></tr>
+    <tr><td><span class="pill info">อยู่กับพนักงาน</span></td><td>จ่ายออกไปแล้ว รอรับคืน</td></tr>
+    <tr><td><span class="pill warn">ส่งซ่อม</span></td><td>ยังเบิกไม่ได้ จนกว่าคุณจะเปลี่ยนเป็นพร้อมใช้งาน</td></tr>
+    <tr><td><span class="pill bad">สูญหาย</span></td><td>หาไม่เจอ ตัดออกจากยอดที่เบิกได้</td></tr>
+    <tr><td><span class="pill mute">ปลดระวาง</span></td><td>เลิกใช้แล้ว เก็บไว้เป็นประวัติ</td></tr>
+  </table>
+
+  <h2 class="sec">5 ข้อที่ต้องจำ</h2>
+  <div class="rules">
+    <div class="r"><b>1</b><span>ยอดของตัดตอนกด <b>อนุมัติและจ่ายของ</b> ครั้งเดียว — หยิบของให้ครบก่อนกด</span></div>
+    <div class="r"><b>2</b><span>ของที่ยังไม่ได้ <b>รับเข้า</b> ยอดจะเป็น 0 พนักงานเบิกไม่ได้</span></div>
+    <div class="r"><b>3</b><span>แก้ยอดเองได้ทางเดียวคือ <b>ปรับยอด</b> และต้องเขียนเหตุผลทุกครั้ง</span></div>
+    <div class="r"><b>4</b><span>ครุภัณฑ์ต้องมี <b>เลขติดบนตัวของ</b> และควรใส่กำหนดคืนทุกครั้งที่จ่าย</span></div>
+    <div class="r"><b>5</b><span>ทุกอย่างที่คุณกด ระบบบันทึกไว้หมดว่าใครทำ เมื่อไร — ผิดแล้วตามแก้ได้</span></div>
+  </div>
+
+  <h2 class="sec">ถามบ่อย</h2>
+  <div class="qa">
+    <details><summary>กดจ่ายของไปแล้ว แต่จ่ายผิด</summary>
+      <p>ยกเลิกเองไม่ได้ · ถ้าเป็นของสิ้นเปลือง ให้รับของกลับมาแล้วกด <b>ปรับยอด</b> ใส่ยอดที่นับได้จริง พร้อมเขียนเหตุผล · ถ้าเป็นครุภัณฑ์ ให้กด <b>รับคืน</b> ที่หน้าครุภัณฑ์</p></details>
+    <details><summary>ของมีไม่พอที่เขาขอ ทำยังไง</summary>
+      <p>แก้ช่อง <b>จ่ายจริง</b> ให้เท่าที่มี แล้วกดจ่ายตามปกติ · ใบจะขึ้นว่า <b>ได้บางส่วน</b> · ส่วนที่ขาด ให้เขาเปิดใบใหม่เมื่อของเข้า</p></details>
+    <details><summary>ไม่อยากจ่ายใบนี้เลย</summary>
+      <p>กด <b>ปฏิเสธใบนี้</b> และต้องเขียนเหตุผลในช่องหมายเหตุก่อน ระบบถึงจะให้กด · พนักงานจะเห็นเหตุผลที่คุณเขียน</p></details>
+    <details><summary>คีย์สินค้าผิด ลบทิ้งได้ไหม</summary>
+      <p>ได้ ถ้ารายการนั้น<b>ยังไม่เคยรับเข้า ไม่มีใครเบิก และไม่มีเลขครุภัณฑ์</b> — กดที่รายการนั้น จะเห็นปุ่ม <b>🗑️ ลบรายการนี้</b> ·
+      ถ้ามีประวัติไปแล้วจะไม่มีปุ่มนี้ ให้กด <b>แก้ไขข้อมูลสินค้า</b> แล้ว<b>ปิดใช้งาน</b>แทน ของจะหายจากรายการที่พนักงานเบิกได้ แต่ประวัติเก่ายังอยู่ครบ</p></details>
+    <details><summary>พนักงานบอกว่าเบิกของตัวนี้ไม่ได้</summary>
+      <p>เช็ก 2 อย่าง: (1) ของตัวนั้นอยู่ในระบบหรือยัง (2) ยอด <b>เบิกได้</b> เหลือ 0 หรือเปล่า · ถ้าของอยู่บนชั้นแต่ระบบเป็น 0 แปลว่ายังไม่ได้ <b>รับเข้า</b></p></details>
+    <details><summary>ครุภัณฑ์เลยกำหนดคืนแล้วไม่มีใครเอามาส่ง</summary>
+      <p>ไปหน้า <b>ครุภัณฑ์</b> กดปุ่ม <b>📣 เตือนคนที่เลยกำหนดคืน</b> ระบบส่งแจ้งเตือนถึงทุกคนที่ค้างของให้ทีเดียว</p></details>
+    <details><summary>อยากรู้ว่าของหายไปไหน</summary>
+      <p>เปิดรายการสินค้านั้น เลื่อนลงไปดู <b>ประวัติการเคลื่อนไหวล่าสุด</b> จะเห็นทุกบรรทัดว่าใครทำอะไร เมื่อไร เหลือเท่าไร</p></details>
+    <details><summary>ใช้จากมือถือได้ไหม</summary>
+      <p>ได้ทุกหน้า · เมนูจะย้ายไปอยู่<b>แถบล่างจอ</b> · ถ่ายรูปสินค้าจากมือถือได้เลย ระบบย่อรูปให้เอง</p></details>
+  </div>
+
+  <p class="lead" style="margin-top:26px">ติดตรงไหน ถามผู้ดูแลระบบได้ตลอด</p>
+</main>
+
+</body>
+</html>

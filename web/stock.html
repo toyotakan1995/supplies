@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>สินค้าและสต็อก · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  .bar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
+  .bar input[type=search]{max-width:300px}
+  .bar .grow{flex:1}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{
+    font:inherit; font-size:13.5px; cursor:pointer; padding:6px 14px; border-radius:999px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink-soft);
+  }
+  .chip[aria-pressed=true]{background:#2b2e36; border-color:#2b2e36; color:#fff; font-weight:700}
+  .chip.alarm[aria-pressed=false]{border-color:#eddcb8; color:#7a4f04; background:var(--warn-bg)}
+
+  table{min-width:880px}
+  td.code{font-family:ui-monospace,Consolas,monospace; font-size:13.5px; font-weight:700; white-space:nowrap}
+  td.nm{min-width:200px}
+  td.nm small{display:block; color:var(--muted); font-size:12.5px}
+  td.nm .nmwrap{display:flex; align-items:center; gap:12px; min-width:0}
+  td.nm .ithumb{width:52px; height:52px; border-radius:11px; font-size:22px}
+  td.nm .nmtx{min-width:0}
+  td.nm .kindtag{margin-top:4px}
+  .qty{font-weight:700; font-size:15.5px}
+  .qty.low{color:var(--bad)}
+  .qty small{display:block; font-weight:400; font-size:12.5px; color:var(--muted)}
+  .off td{opacity:.5}
+
+  .alert{
+    background:var(--warn-bg); border:1px solid #eddcb8;
+    border-radius:10px; padding:12px 15px; font-size:14.5px; margin-bottom:16px;
+  }
+  .alert b{color:#7a4f04}
+  .alert[hidden]{display:none}
+
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:5px 16px; font-size:14.5px; margin-bottom:18px}
+  .kv dt{color:var(--muted)} .kv dd{margin:0; font-weight:700}
+  .sub-h{font-size:13.5px; font-weight:700; color:var(--ink-soft); margin:18px 0 9px; display:flex; align-items:center; gap:9px}
+  .sub-h::after{content:""; flex:1; height:1px; background:var(--line)}
+  .mini{width:100%; border-collapse:collapse; min-width:0; font-size:13.5px}
+  .mini th,.mini td{padding:6px 9px; border-bottom:1px solid #eef0f4; text-align:start}
+  .mini .num{text-align:end; font-variant-numeric:tabular-nums}
+  .scrollbox{max-height:280px; overflow-y:auto; border:1px solid var(--line); border-radius:9px}
+  /* กล่องยืนยันก่อนลบ — ชื่อของที่จะลบต้องเด่นที่สุด คนอ่านจะได้รู้ว่ากำลังลบอันไหน */
+  .confirm-lead{margin:0 0 10px; font-size:15.5px; color:var(--ink-soft)}
+  .confirm-item{font-size:17.5px; font-weight:700; padding:12px 14px; margin-bottom:12px;
+                background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r-sm);
+                overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar"></header>
+
+<main class="page">
+  <h1>สินค้าและสต็อก</h1>
+  <p class="sub">กดที่แถวเพื่อดูรายละเอียดและประวัติของแต่ละรายการ</p>
+
+  <div class="alert" id="lowAlert" hidden></div>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="ค้นหารหัส ชื่อสินค้า หรือหมวดหมู่">
+    <div class="chips">
+      <button class="chip" data-kind=""           aria-pressed="true">ทั้งหมด</button>
+      <button class="chip" data-kind="consumable" aria-pressed="false">ของสิ้นเปลือง</button>
+      <button class="chip" data-kind="asset"      aria-pressed="false">ครุภัณฑ์</button>
+      <button class="chip alarm" id="chipLow"     aria-pressed="false">⚠️ เฉพาะที่ใกล้หมด</button>
+    </div>
+    <span class="grow"></span>
+    <button class="btn btn-ghost" id="addCat">+ หมวดหมู่</button>
+    <button class="btn btn-primary" id="addItem">+ เพิ่มสินค้า</button>
+  </div>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>รหัส</th><th>ชื่อสินค้า / หมวดหมู่</th>
+        <th class="num">เบิกได้</th>
+        <th class="num" data-tip="ต่ำกว่าจำนวนนี้ ระบบจะเตือนว่าของใกล้หมด">จุดสั่งซื้อ</th>
+        <th class="num" data-tip="ใช้คิดมูลค่าสต็อกในหน้ารายงาน">ราคา/หน่วย</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+$('#topbar').innerHTML = topbarHTML();
+
+let ITEMS = [], CATS = [], FILTER = { q:'', kind:'', low:false };
+
+/* ---------- ตาราง ---------- */
+function drawRows() {
+  const tb = $('#rows'); tb.innerHTML = '';
+  const list = FILTER.low ? ITEMS.filter((i) => i.low) : ITEMS;
+  if (!list.length) {
+    tb.appendChild(emptyRow(6,
+      ITEMS.length ? 'ไม่มีสินค้าที่ตรงกับตัวกรอง' : 'ยังไม่มีสินค้าในระบบ',
+      ITEMS.length ? 'ลองเปลี่ยนคำค้นหรือกดชิป “ทั้งหมด”'
+                   : 'เริ่มจากกด “+ เพิ่มสินค้า” คีย์รายการที่มีอยู่บนชั้น แล้วกด “รับเข้า” เพื่อบันทึกยอดตั้งต้น',
+      ITEMS.length ? '🔍' : '📦'));
+    return;
+  }
+  for (const it of list) {
+    const tr = document.createElement('tr');
+    if (!it.active) tr.className = 'off';
+
+    const c1 = document.createElement('td'); c1.className = 'code'; c1.textContent = it.code;
+
+    // ชื่อ + ภาพย่อ — ผู้ดูแลคลังกวาดตาหาของบนชั้นจากรูปเร็วกว่าอ่านชื่อทีละบรรทัด
+    const c2 = document.createElement('td'); c2.className = 'nm';
+    const wrap = document.createElement('div'); wrap.className = 'nmwrap';
+    const th = document.createElement('span'); th.className = 'ithumb'; th.textContent = '📦';
+    const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.appendChild(im);
+    if (it.hasImage) setItemImg(im, it.id).then(() => { if (!im.hidden) th.firstChild.textContent = ''; });
+    const tx = document.createElement('div'); tx.className = 'nmtx';
+    tx.textContent = it.name;
+    const s = document.createElement('small'); s.textContent = it.category || 'ไม่ระบุหมวดหมู่'; tx.appendChild(s);
+    // เดิมมีคอลัมน์ "ประเภท" ที่เขียนว่า "ของสิ้นเปลือง" ซ้ำทุกแถว = ข้อความ 6-7 บรรทัดที่ไม่บอกอะไรใหม่
+    // เหลือติดป้ายเฉพาะ "ครุภัณฑ์" ซึ่งเป็นตัวที่กติกาต่างออกไป (ต้องยืม-คืน มีเลขรายชิ้น)
+    if (it.kind === 'asset') {
+      const tag = document.createElement('span'); tag.className = 'pill info kindtag'; tag.textContent = 'ครุภัณฑ์';
+      tx.appendChild(tag);
+    }
+    wrap.append(th, tx); c2.appendChild(wrap);
+
+    const c4 = document.createElement('td'); c4.className = 'num';
+    const q = document.createElement('div');
+    q.className = 'qty' + (it.low ? ' low' : '');
+    q.textContent = num(it.available) + ' ' + it.unit;
+    c4.appendChild(q);
+    if (it.reserved > 0) { const sm = document.createElement('small'); sm.textContent = 'จองไว้ ' + num(it.reserved); q.appendChild(sm); }
+    else if (it.kind === 'asset' && it.tags && it.tags.in_use) {
+      const sm = document.createElement('small'); sm.textContent = 'อยู่กับพนักงาน ' + it.tags.in_use; q.appendChild(sm);
+    }
+
+    const c5 = document.createElement('td'); c5.className = 'num';
+    if (it.reorderPoint > 0) c5.textContent = num(it.reorderPoint);
+    else { c5.className = 'num dash'; c5.textContent = '—'; }
+    const c6 = document.createElement('td'); c6.className = 'num';
+    if (it.unitCost > 0) c6.textContent = money(it.unitCost);
+    else { c6.className = 'num dash'; c6.textContent = '—'; }
+
+    const c7 = document.createElement('td'); c7.className = 'act';
+    // 2 ปุ่มนี้ชื่อคล้ายกันจนคนใช้ไม่บ่อยสับสน — ติดคำอธิบายไว้ที่ปุ่มเลย
+    const bRecv = rowBtn('รับเข้า', 'pri', () => openReceive(it));
+    bRecv.setAttribute('data-tip', 'ของเข้าคลังใหม่ เช่น ซื้อมาเพิ่ม');
+    c7.appendChild(bRecv);
+    if (it.kind === 'consumable') {
+      const bAdj = rowBtn('ปรับยอด', '', () => openAdjust(it));
+      bAdj.setAttribute('data-tip', 'แก้ยอดให้ตรงกับที่นับได้จริงบนชั้น');
+      c7.appendChild(bAdj);
+    }
+    // เดิมมีปุ่ม "รายละเอียด" ทุกแถว = ปุ่มเรียงกัน 3 อัน × ทุกบรรทัด
+    // ย้ายมาเป็น "กดที่แถว" แทน เหลือปุ่มเฉพาะงานที่ต้องเจาะจง (รับเข้า/ปรับยอด)
+    c7.onclick = (e) => e.stopPropagation();
+
+    tr.onclick = () => openDetail(it);
+    tr.style.cursor = 'pointer';
+    tr.title = 'กดเพื่อดูรายละเอียด';
+
+    tr.append(c1, c2, c4, c5, c6, c7);
+    tb.appendChild(tr);
+  }
+}
+
+async function load() {
+  // โชว์โครงร่างระหว่างรอ — ไม่ปล่อยให้เป็นตารางเปล่า
+  const tb0 = $('#rows'); if (tb0 && !ITEMS.length) { tb0.innerHTML = ''; tb0.appendChild(skelRows(6, 4)); }
+  const p = new URLSearchParams();
+  if (FILTER.q) p.set('q', FILTER.q);
+  if (FILTER.kind) p.set('kind', FILTER.kind);
+  p.set('all', '1');
+  const [it, ct] = await Promise.all([api('/api/catalog/items?' + p), api('/api/catalog/categories')]);
+  // เรียงตาม "รหัสสินค้า" ในหน้านี้หน้าเดียว — ผู้ดูแลคลังไล่ของตามรหัสบนชั้น
+  // (เซิร์ฟเวอร์เรียงตามหมวดหมู่/ชื่อ ซึ่งเหมาะกับหน้าเลือกของของพนักงาน จึงไม่ไปแก้ที่ API)
+  // 🔑 numeric:true → 002 มาก่อน 010 · รหัสที่มีตัวอักษรปน (PEN-001) ก็เรียงถูกตามธรรมชาติ
+  // ปิดใช้งานแล้วไปอยู่ท้ายเสมอ เหมือนลำดับเดิมที่เซิร์ฟเวอร์ส่งมา
+  ITEMS = it.items.sort((a, b) =>
+    (Number(b.active) - Number(a.active)) ||
+    String(a.code).localeCompare(String(b.code), 'th', { numeric: true, sensitivity: 'base' }));
+  CATS = ct.categories;
+
+  const low = ITEMS.filter((i) => i.low && i.active);
+  $('#lowAlert').hidden = low.length === 0;
+  if (low.length) {
+    $('#lowAlert').innerHTML = '';
+    const b = document.createElement('b'); b.textContent = `ของใกล้หมด ${low.length} รายการ`;
+    $('#lowAlert').append(b, ' — ' + low.map((i) => `${i.name} (เหลือ ${num(i.available)} ${i.unit})`).join(' · '));
+  }
+  drawRows();
+}
+
+/* ---------- ตัวกรอง ---------- */
+let timer;
+$('#q').oninput = () => { clearTimeout(timer); timer = setTimeout(() => { FILTER.q = $('#q').value.trim(); load(); }, 250); };
+for (const c of $$('.chip[data-kind]')) {
+  c.onclick = () => {
+    for (const x of $$('.chip[data-kind]')) x.setAttribute('aria-pressed', String(x === c));
+    FILTER.kind = c.dataset.kind; load();
+  };
+}
+$('#chipLow').onclick = () => {
+  FILTER.low = !FILTER.low;
+  $('#chipLow').setAttribute('aria-pressed', String(FILTER.low));
+  drawRows();
+};
+
+/* ---------- เพิ่ม/แก้สินค้า ---------- */
+function openItemForm(item) {
+  const it = item || { kind:'consumable', unit:'ชิ้น', reorderPoint:0, unitCost:0 };
+  const box = form(`
+    <div class="imgpick">
+      <span class="ithumb" id="imgBox">📦<img id="imgPrev" alt="" hidden></span>
+      <span class="btns">
+        <button type="button" class="btn" id="imgPick">เลือกรูปสินค้า</button>
+        <button type="button" class="btn btn-ghost" id="imgDel" hidden>ลบรูป</button>
+        <span class="fhint">ถ่ายจากมือถือได้เลย ระบบย่อรูปให้อัตโนมัติ</span>
+      </span>
+      <input type="file" id="imgFile" accept="image/*">
+    </div>
+    <div class="row2">
+      <label class="fld"><span>รหัสสินค้า</span><input type="text" id="f_code"></label>
+      <label class="fld"><span>หน่วยนับ</span><input type="text" id="f_unit" placeholder="ด้าม · กล่อง · เครื่อง"></label>
+    </div>
+    <label class="fld"><span>ชื่อสินค้า</span><input type="text" id="f_name"></label>
+    <label class="fld"><span>หมวดหมู่</span><select id="f_cat"></select></label>
+    <label class="fld"><span>ประเภท</span>
+      <select id="f_kind">
+        <option value="consumable">ของสิ้นเปลือง — เบิกแล้วตัดสต็อกจบ</option>
+        <option value="asset">ครุภัณฑ์ — ต้องยืม-คืน มีเลขครุภัณฑ์รายชิ้น</option>
+      </select>
+    </label>
+    <p class="fhint" id="kindHint"></p>
+    <div class="row2">
+      <label class="fld"><span>จุดสั่งซื้อขั้นต่ำ</span><input type="number" id="f_rp" min="0" step="any"></label>
+      <label class="fld"><span>ราคาต่อหน่วย (บาท)</span><input type="number" id="f_cost" min="0" step="any"></label>
+    </div>
+    <p class="fhint">ต่ำกว่าจุดสั่งซื้อแล้วระบบจะเตือนผู้ดูแลคลัง · ใส่ 0 = ไม่เตือน</p>
+  `);
+  const sel = $('#f_cat', box);
+  const none = document.createElement('option'); none.value = ''; none.textContent = '— ไม่ระบุหมวดหมู่ —';
+  sel.appendChild(none);
+  for (const c of CATS) {
+    const o = document.createElement('option'); o.value = c.id; o.textContent = c.name;
+    if (c.id === it.categoryId) o.selected = true;
+    sel.appendChild(o);
+  }
+  $('#f_code', box).value = it.code || '';
+  $('#f_unit', box).value = it.unit || 'ชิ้น';
+  $('#f_name', box).value = it.name || '';
+  $('#f_kind', box).value = it.kind;
+  $('#f_rp', box).value = it.reorderPoint || 0;
+  $('#f_cost', box).value = it.unitCost || 0;
+
+  const kindSel = $('#f_kind', box), hint = $('#kindHint', box);
+  const syncHint = () => {
+    hint.textContent = kindSel.value === 'asset'
+      ? 'ยอดคงเหลือจะนับจากเลขครุภัณฑ์ที่ยังว่างอยู่ ไม่ได้กรอกเป็นตัวเลขเอง'
+      : 'ยอดคงเหลือเป็นตัวเลข เพิ่มด้วย “รับเข้า” และแก้ด้วย “ปรับยอด”';
+  };
+  syncHint(); kindSel.onchange = syncHint;
+  if (item) { kindSel.disabled = true; hint.textContent = 'เปลี่ยนประเภทหลังมีประวัติการเคลื่อนไหวแล้วไม่ได้'; }
+
+  /* ---------- รูปสินค้า ----------
+     สินค้าใหม่ยังไม่มี id จึงอัปโหลดทันทีไม่ได้ — เก็บรูปที่ย่อแล้วไว้ใน pendingImg
+     แล้วส่งตามหลังตอนที่เซิร์ฟเวอร์คืน id กลับมา */
+  let pendingImg = null;        // Blob ที่ย่อแล้ว รอส่ง
+  let removeImg = false;        // กด "ลบรูป" ไว้ รอยืนยันตอนบันทึก
+  const prev = $('#imgPrev', box), imgBox = $('#imgBox', box), delBtn = $('#imgDel', box);
+  const showPrev = (url) => {
+    prev.src = url; prev.hidden = false;
+    imgBox.firstChild.textContent = '';       // ซ่อนไอคอนกล่องเมื่อมีรูปจริง
+    delBtn.hidden = false;
+  };
+  const clearPrev = () => {
+    prev.removeAttribute('src'); prev.hidden = true;
+    imgBox.firstChild.textContent = '📦';
+    delBtn.hidden = true;
+  };
+  if (item && item.hasImage) setItemImg(prev, item.id).then(() => {
+    if (!prev.hidden) { imgBox.firstChild.textContent = ''; delBtn.hidden = false; }
+  });
+  $('#imgPick', box).onclick = () => $('#imgFile', box).click();
+  $('#imgFile', box).onchange = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try {
+      pendingImg = await shrinkImage(f);
+      removeImg = false;
+      showPrev(URL.createObjectURL(pendingImg));
+    } catch (err) { showErr(box, err.message); }
+    e.target.value = '';        // เลือกไฟล์เดิมซ้ำได้
+  };
+  delBtn.onclick = () => { pendingImg = null; removeImg = true; clearPrev(); };
+
+  const save = async () => {
+    const body = {
+      code: $('#f_code', box).value.trim(), name: $('#f_name', box).value.trim(),
+      unit: $('#f_unit', box).value.trim(), categoryId: sel.value || null, kind: kindSel.value,
+      reorderPoint: $('#f_rp', box).value, unitCost: $('#f_cost', box).value,
+    };
+    if (!body.code || !body.name) return showErr(box, 'กรุณากรอกรหัสสินค้าและชื่อสินค้า');
+    try {
+      let id = item && item.id;
+      if (item) await api('/api/catalog/items/' + item.id, { method:'PUT', body: JSON.stringify(body) });
+      else id = (await api('/api/catalog/items', { method:'POST', body: JSON.stringify(body) })).id;
+      // รูปล้มเหลวไม่ควรทำให้ข้อมูลสินค้าที่บันทึกไปแล้วหาย — แจ้งเตือนแล้วไปต่อ
+      try {
+        if (pendingImg) await uploadItemImg(id, pendingImg);
+        else if (removeImg && item) await api('/api/catalog/items/' + id + '/image', { method:'DELETE' });
+      } catch (err) { toast('บันทึกข้อมูลแล้ว แต่รูปไม่สำเร็จ: ' + err.message, 'bad'); }
+      closeModal();
+      toast(item ? 'บันทึกแล้ว' : 'เพิ่มสินค้าแล้ว — ขั้นต่อไปกด “รับเข้า” เพื่อบันทึกของที่มีอยู่', 'ok');
+      await load();
+    } catch (e) { showErr(box, e.message); }
+  };
+  openModal(item ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า', box, [
+    { label:'ยกเลิก', onClick: closeModal },
+    { label: item ? 'บันทึก' : 'เพิ่มสินค้า', primary:true, onClick: save },
+  ], { sticky:true });
+}
+$('#addItem').onclick = () => openItemForm(null);
+
+$('#addCat').onclick = () => {
+  const box = form('<label class="fld"><span>ชื่อหมวดหมู่</span><input type="text" id="c_name" placeholder="เครื่องเขียน · อุปกรณ์ไอที"></label>');
+  const save = async () => {
+    const name = $('#c_name', box).value.trim();
+    if (!name) return showErr(box, 'กรุณากรอกชื่อหมวดหมู่');
+    try { await api('/api/catalog/categories', { method:'POST', body: JSON.stringify({ name }) });
+      closeModal(); toast('เพิ่มหมวดหมู่แล้ว', 'ok'); await load(); }
+    catch (e) { showErr(box, e.message); }
+  };
+  openModal('เพิ่มหมวดหมู่', box, [
+    { label:'ยกเลิก', onClick: closeModal }, { label:'เพิ่ม', primary:true, onClick: save },
+  ], { sticky:true });
+};
+
+/* ---------- รับของเข้า ---------- */
+function openReceive(it) {
+  const isAsset = it.kind === 'asset';
+  const box = form(isAsset ? `
+    <p class="fhint" style="margin-top:0">ครุภัณฑ์นับเป็นชิ้น — กรอกเลขครุภัณฑ์ที่จะติดบนตัวของ บรรทัดละ 1 เลข</p>
+    <label class="fld"><span>เลขครุภัณฑ์</span><textarea id="r_tags" rows="5" placeholder="NB-2569-001&#10;NB-2569-002"></textarea></label>
+    <label class="fld"><span>ราคาต่อหน่วย (บาท)</span><input type="number" id="r_cost" min="0" step="any"></label>
+    <label class="fld"><span>หมายเหตุ</span><input type="text" id="r_note" placeholder="เลขที่ใบสั่งซื้อ หรือชื่อผู้ขาย"></label>
+  ` : `
+    <div class="row2">
+      <label class="fld"><span>จำนวนที่รับเข้า (${it.unit})</span><input type="number" id="r_qty" min="0" step="any"></label>
+      <label class="fld"><span>ราคาต่อหน่วย (บาท)</span><input type="number" id="r_cost" min="0" step="any"></label>
+    </div>
+    <label class="fld"><span>หมายเหตุ</span><input type="text" id="r_note" placeholder="เลขที่ใบสั่งซื้อ หรือชื่อผู้ขาย"></label>
+    <p class="fhint">ยอดปัจจุบัน ${num(it.onHand)} ${it.unit}</p>
+  `);
+  $('#r_cost', box).value = it.unitCost || 0;
+
+  const save = async () => {
+    const body = { itemId: it.id, unitCost: $('#r_cost', box).value, note: $('#r_note', box).value.trim() };
+    if (isAsset) {
+      body.tagNos = $('#r_tags', box).value.split('\n').map((s) => s.trim()).filter(Boolean);
+      if (!body.tagNos.length) return showErr(box, 'กรุณากรอกเลขครุภัณฑ์อย่างน้อย 1 เลข');
+    } else {
+      body.qty = $('#r_qty', box).value;
+      if (!(Number(body.qty) > 0)) return showErr(box, 'จำนวนที่รับเข้าต้องมากกว่า 0');
+    }
+    try {
+      const out = await api('/api/stock/receive', { method:'POST', body: JSON.stringify(body) });
+      closeModal(); toast(`รับเข้าแล้ว · ${it.name} คงเหลือ ${num(out.qtyAfter)} ${it.unit}`, 'ok');
+      await load();
+    } catch (e) { showErr(box, e.message); }
+  };
+  openModal('รับของเข้า — ' + it.name, box, [
+    { label:'ยกเลิก', onClick: closeModal },
+    { label:'บันทึกรับเข้า', primary:true, onClick: save },
+  ], { sticky:true });
+}
+
+/* ---------- ปรับยอด ---------- */
+function openAdjust(it) {
+  const box = form(`
+    <p class="fhint" style="margin-top:0">กรอก “ยอดที่นับได้จริง” ระบบจะคำนวณผลต่างและบันทึกประวัติให้เอง</p>
+    <div class="row2">
+      <label class="fld"><span>ยอดในระบบตอนนี้</span><input type="text" value="${num(it.onHand)} ${it.unit}" disabled></label>
+      <label class="fld"><span>ยอดที่นับได้จริง (${it.unit})</span><input type="number" id="a_qty" min="0" step="any"></label>
+    </div>
+    <label class="fld"><span>เหตุผลที่ปรับ</span><input type="text" id="a_note" placeholder="ตรวจนับประจำเดือน · ของชำรุด · บันทึกผิด"></label>
+    <p class="fhint">บังคับกรอกเหตุผล เพราะเป็นรายการเดียวที่แก้ยอดได้โดยไม่มีของเคลื่อนไหวจริง</p>
+  `);
+  const save = async () => {
+    const counted = $('#a_qty', box).value, note = $('#a_note', box).value.trim();
+    if (counted === '') return showErr(box, 'กรุณากรอกยอดที่นับได้');
+    if (!note) return showErr(box, 'กรุณาระบุเหตุผลที่ปรับยอด');
+    try {
+      const out = await api('/api/stock/adjust', { method:'POST', body: JSON.stringify({ itemId: it.id, counted, note }) });
+      closeModal(); toast(`ปรับยอดแล้ว ${num(out.before)} → ${num(out.after)} ${it.unit}`, 'ok');
+      await load();
+    } catch (e) { showErr(box, e.message); }
+  };
+  openModal('ปรับยอด — ' + it.name, box, [
+    { label:'ยกเลิก', onClick: closeModal },
+    { label:'บันทึกการปรับยอด', primary:true, onClick: save },
+  ], { sticky:true });
+}
+
+/* ---------- รายละเอียด ---------- */
+async function openDetail(it) {
+  let d;
+  try { d = await api('/api/catalog/items/' + it.id); }
+  catch (e) { return toast(e.message, 'bad'); }
+  const item = d.item;
+  const box = document.createElement('div');
+
+  const kv = document.createElement('dl'); kv.className = 'kv';
+  for (const [k, v] of [
+    ['รหัสสินค้า', item.code], ['ประเภท', KIND_LABEL[item.kind]],
+    ['หมวดหมู่', item.category || 'ไม่ระบุ'], ['หน่วยนับ', item.unit],
+    ['เบิกได้ตอนนี้', num(item.available) + ' ' + item.unit],
+    ['จุดสั่งซื้อ', item.reorderPoint > 0 ? num(item.reorderPoint) + ' ' + item.unit : 'ไม่เตือน'],
+    ['ราคาต่อหน่วย', item.unitCost > 0 ? money(item.unitCost) : '—'],
+    ['สถานะ', item.active ? 'ใช้งานอยู่' : 'ปิดใช้งานแล้ว'],
+  ]) {
+    const a = document.createElement('dt'); a.textContent = k;
+    const b = document.createElement('dd'); b.textContent = v;
+    kv.append(a, b);
+  }
+  box.appendChild(kv);
+
+  if (item.kind === 'asset') {
+    const h = document.createElement('div'); h.className = 'sub-h';
+    h.textContent = `เลขครุภัณฑ์ ${d.tags.length} ชิ้น`;
+    box.appendChild(h);
+    const sb = document.createElement('div'); sb.className = 'scrollbox';
+    const t = document.createElement('table'); t.className = 'mini';
+    t.innerHTML = '<thead><tr><th>เลขครุภัณฑ์</th><th>สถานะ</th><th>ผู้ถือครอง</th><th></th></tr></thead>';
+    const tb = document.createElement('tbody');
+    for (const tag of d.tags) {
+      const tr = document.createElement('tr');
+      const a = document.createElement('td'); a.textContent = tag.tag_no;
+      const b = document.createElement('td');
+      b.appendChild(pill(ASSET_STATUS[tag.status] || tag.status,
+        tag.status === 'available' ? 'ok' : tag.status === 'in_use' ? 'info' : tag.status === 'lost' ? 'bad' : 'mute'));
+      const c = document.createElement('td'); c.textContent = tag.holder || '—';
+      const e = document.createElement('td');
+      if (tag.status !== 'in_use') e.appendChild(rowBtn('เปลี่ยนสถานะ', '', () => openTagStatus(tag)));
+      tr.append(a, b, c, e); tb.appendChild(tr);
+    }
+    if (!d.tags.length) tb.appendChild(emptyRow(4, 'ยังไม่มีเลขครุภัณฑ์', 'กด “รับเข้า” แล้วใส่เลขครุภัณฑ์ทีละชิ้น ระบบจะติดตามว่าแต่ละชิ้นอยู่กับใคร', '🏷️'));
+    t.appendChild(tb); sb.appendChild(t); box.appendChild(sb);
+  }
+
+  const h2 = document.createElement('div'); h2.className = 'sub-h'; h2.textContent = 'ประวัติการเคลื่อนไหวล่าสุด';
+  box.appendChild(h2);
+  const sb2 = document.createElement('div'); sb2.className = 'scrollbox';
+  const t2 = document.createElement('table'); t2.className = 'mini';
+  t2.innerHTML = '<thead><tr><th>เมื่อ</th><th>รายการ</th><th class="num">จำนวน</th><th class="num">คงเหลือ</th><th>โดย</th><th>หมายเหตุ</th></tr></thead>';
+  const tb2 = document.createElement('tbody');
+  for (const m of d.movements) {
+    const tr = document.createElement('tr');
+    [dt(m.at), MOVE_LABEL[m.kind] || m.kind,
+     (m.qty > 0 ? '+' : '') + num(m.qty) + (m.tag_no ? ' · ' + m.tag_no : ''),
+     num(m.qty_after), m.actor || '—', m.note || '—',
+    ].forEach((v, i) => { const td = document.createElement('td'); if (i === 2 || i === 3) td.className = 'num'; td.textContent = v; tr.appendChild(td); });
+    tb2.appendChild(tr);
+  }
+  if (!d.movements.length) tb2.appendChild(emptyRow(6, 'ยังไม่มีความเคลื่อนไหว', 'ทุกครั้งที่รับเข้า จ่ายออก หรือปรับยอด จะมีบรรทัดบันทึกไว้ที่นี่', '📈'));
+  t2.appendChild(tb2); sb2.appendChild(t2); box.appendChild(sb2);
+
+  // ลบได้เฉพาะรายการที่ยังไม่มีอะไรผูกอยู่ (เซิร์ฟเวอร์เป็นคนตัดสิน ส่งเหตุผลมาใน d.deleteBlock)
+  // มีประวัติแล้วให้ "ปิดใช้งาน" ที่หน้าแก้ไขแทน — ประวัติเก่าจะได้ยังชี้กลับมาที่รายการนี้ได้
+  const btns = [{ label:'ปิด', onClick: closeModal }];
+  if (!d.deleteBlock) btns.push({ label:'🗑️ ลบรายการนี้', danger:true, onClick: () => { closeModal(); openDeleteItem(item); } });
+  btns.push({ label:'แก้ไขข้อมูลสินค้า', primary:true, onClick: () => { closeModal(); openItemForm(item); } });
+  openModal(item.name, box, btns, true);
+}
+
+/** ยืนยันก่อนลบ — บอกให้ชัดว่ากำลังลบอะไร และลบแล้วไม่มีทางเอากลับ */
+function openDeleteItem(item) {
+  const box = document.createElement('div');
+  const p = document.createElement('p');
+  p.className = 'confirm-lead';
+  p.textContent = 'ลบรายการนี้ออกจากระบบ?';
+  const nm = document.createElement('div');
+  nm.className = 'confirm-item';
+  nm.textContent = item.code + ' · ' + item.name;
+  const why = document.createElement('div');
+  why.className = 'callout';
+  why.textContent = 'รายการนี้ยังไม่มีประวัติการเคลื่อนไหวและไม่มีของค้างอยู่ จึงลบทิ้งได้ '
+    + '· ลบแล้วเอากลับมาไม่ได้ ถ้าแค่เลิกใช้ ให้กด “แก้ไขข้อมูลสินค้า” แล้วปิดใช้งานแทน';
+  box.append(p, nm, why);
+  openModal('ลบสินค้า', box, [
+    { label:'ยกเลิก', onClick: closeModal },
+    { label:'ลบเลย', danger:true, onClick: async () => {
+      try { await api('/api/catalog/items/' + item.id, { method:'DELETE' }); }
+      catch (e) { return toast(e.message, 'bad'); }
+      closeModal(); toast('ลบ “' + item.name + '” แล้ว', 'ok'); load();
+    } },
+  ]);
+}
+
+function openTagStatus(tag) {
+  const box = form(`
+    <label class="fld"><span>เลขครุภัณฑ์</span><input type="text" value="${tag.tag_no}" disabled></label>
+    <label class="fld"><span>เปลี่ยนสถานะเป็น</span>
+      <select id="s_st">
+        <option value="available">พร้อมใช้งาน</option>
+        <option value="maintenance">ส่งซ่อม</option>
+        <option value="lost">สูญหาย</option>
+        <option value="retired">ปลดระวาง</option>
+      </select>
+    </label>
+    <label class="fld"><span>หมายเหตุ</span><input type="text" id="s_note" placeholder="อาการเสีย · เหตุที่หาย"></label>
+  `);
+  $('#s_st', box).value = tag.status === 'available' ? 'maintenance' : 'available';
+  const save = async () => {
+    try {
+      await api('/api/stock/asset-status', { method:'POST', body: JSON.stringify({
+        tagId: tag.id, status: $('#s_st', box).value, note: $('#s_note', box).value.trim() }) });
+      closeModal(); toast('เปลี่ยนสถานะแล้ว', 'ok'); await load();
+    } catch (e) { showErr(box, e.message); }
+  };
+  openModal('เปลี่ยนสถานะครุภัณฑ์', box, [
+    { label:'ยกเลิก', onClick: closeModal }, { label:'บันทึก', primary:true, onClick: save },
+  ], { sticky:true });
+}
+
+(async () => {
+  try {
+    const me = await initTopbar('stock.html');
+    if (me.role !== 'warehouse' && me.role !== 'admin') {
+      toast('หน้านี้สำหรับผู้ดูแลคลังเท่านั้น', 'bad');
+      return setTimeout(() => location.replace('app.html'), 1400);
+    }
+    await load();
+  } catch (e) {
+    const tb = $('#rows');
+    if (tb) { tb.innerHTML = ''; const tr = document.createElement('tr'); const td = document.createElement('td');
+      td.colSpan = 6; td.appendChild(errorBox(e.message, () => location.reload())); tr.appendChild(td); tb.appendChild(tr); }
+    toast(e.message, 'bad');
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>รายงาน · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  .bar{display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px}
+  .bar label{margin:0}
+  .bar label span{display:block; font-size:12.5px; color:var(--muted); margin-bottom:4px}
+  .bar input[type=date]{width:auto}
+  .bar .grow{flex:1}
+  .quick{display:flex; gap:6px; flex-wrap:wrap}
+  .quick button{font:inherit; font-size:13.5px; cursor:pointer; padding:6px 12px; border-radius:999px;
+                border:1px solid var(--line); background:var(--panel); color:var(--ink-soft)}
+  .quick button:hover{background:var(--panel-2)}
+  /* เป้ากดบนมือถือต้อง 44px — ปุ่มชิปเดิมสูงแค่ 35px */
+  @media (max-width:760px){ .quick button{min-height:44px; padding-inline:16px} }
+
+  .kpis{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:13px; margin-bottom:26px}
+  .kpi{background:var(--panel); border:1px solid var(--line);
+       border-radius:var(--radius); box-shadow:var(--shadow); padding:15px 17px; min-width:0}
+  /* ตัวเลขใช้สีหมึกเสมอ — เดิมย้อมทั้งก้อนตาม tone ได้การ์ด 5 ใบ 4 สี อ่านเป็นสัญญาณเตือนไปหมด
+   ความหมาย (เขียว/ส้ม) ย้ายไปอยู่ที่จุดนำหน้าบรรทัดล่างซึ่งเป็นที่ที่บอกสถานะจริง */
+  .kpi .v{color:var(--ink); font-variant-numeric:tabular-nums}
+  .kpi.tone .s{color:var(--tone); font-weight:600}
+  /* การ์ดที่ "ต้องจัดการ" (มีใบค้าง · ของใกล้หมด · ครุภัณฑ์เลยกำหนด) ต้องเด่นกว่าการ์ดที่ปกติดี
+     เดิม 5 ใบหน้าตาเท่ากันหมด ต้องอ่านทุกใบถึงจะรู้ว่าวันนี้มีอะไรต้องทำ */
+  .kpi.attn{background:var(--warn-bg); border-color:#eddcb8}
+  .kpi.attn .v{color:#7a4f04}
+  .kpi.attn .k{color:#8a6a2a}
+  .kpi.tone .s::before{content:''; display:inline-block; width:7px; height:7px; border-radius:50%;
+                       background:var(--tone); margin-inline-end:7px; vertical-align:middle}
+  .kpi .k{font-size:13.5px; color:var(--muted)}
+  .kpi .v{font-size:23px; font-weight:700; line-height:1.25; margin-top:3px;
+          font-variant-numeric:proportional-nums; word-break:break-word}
+  .kpi .s{font-size:12.5px; color:var(--muted); margin-top:2px}
+
+  .sec{margin-bottom:30px}
+  .sec-h{display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap}
+  .sec-h h2{font-size:17.5px; font-weight:700; margin:0}
+  .sec-h .grow{flex:1}
+  table{min-width:560px}
+  .barcell{position:relative; min-width:150px}
+  .barcell .fill{position:absolute; inset-block:5px; inset-inline-start:0; border-radius:5px;
+                 background:var(--info-bg); z-index:0}
+  .barcell .fill.over{background:var(--bad-bg)}
+  .barcell .txt{position:relative; z-index:1; font-variant-numeric:tabular-nums}
+  .pctcell{font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap}
+  .pctcell.over{color:var(--bad)}
+  .pctcell.na{color:var(--muted); font-weight:400}
+  .budget-in{width:120px; text-align:end; padding:5px 8px; font-size:14.5px}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar"></header>
+
+<main class="page">
+  <h1>รายงานและงบประมาณ</h1>
+  <p class="sub">มูลค่าสต็อก การเบิกแยกตามแผนกและบุคคล ครุภัณฑ์คงค้าง และการใช้งบ</p>
+
+  <div class="bar">
+    <label><span>ตั้งแต่วันที่</span><input type="date" id="from"></label>
+    <label><span>ถึงวันที่</span><input type="date" id="to"></label>
+    <div class="quick">
+      <button data-q="30">30 วันล่าสุด</button>
+      <button data-q="month">เดือนนี้</button>
+      <button data-q="year">ปีนี้</button>
+      <button data-q="all">ทั้งหมด</button>
+    </div>
+    <span class="grow"></span>
+    <button class="btn btn-ghost" id="exMv">⬇ ประวัติสต็อก (CSV)</button>
+    <button class="btn btn-ghost" id="exRq">⬇ ใบเบิก (CSV)</button>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section class="sec">
+    <div class="sec-h"><h2>การเบิกแยกตามแผนก</h2></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>แผนก</th><th class="num">จำนวนใบ</th><th class="num">มูลค่าที่เบิก</th><th>สัดส่วน</th></tr></thead>
+      <tbody id="deptRows"></tbody>
+    </table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2>งบประมาณรายแผนก</h2>
+      <input type="month" id="period" style="width:auto">
+      <span class="grow"></span>
+    </div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>แผนก</th><th class="num">วงเงิน</th><th class="num">ใช้ไป</th><th>สัดส่วน</th><th class="num">% ของงบ</th></tr></thead>
+      <tbody id="budgetRows"></tbody>
+    </table></div>
+    <p class="fhint" id="budgetHint" style="margin-top:10px"></p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>คนที่เบิกมากที่สุด</h2></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>ชื่อ</th><th>แผนก</th><th class="num">จำนวนใบ</th><th class="num">มูลค่า</th></tr></thead>
+      <tbody id="personRows"></tbody>
+    </table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>ของที่ถูกเบิกมากที่สุด</h2></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>รหัส</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">มูลค่า</th></tr></thead>
+      <tbody id="itemRows"></tbody>
+    </table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h">
+      <h2>ครุภัณฑ์คงค้างในมือพนักงาน</h2>
+      <span class="grow"></span>
+      <button class="btn btn-ghost" id="exHeld">⬇ CSV</button>
+    </div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>เลขครุภัณฑ์</th><th>อุปกรณ์</th><th>ผู้ถือครอง</th><th>แผนก</th><th>กำหนดคืน</th><th class="num">มูลค่า</th></tr></thead>
+      <tbody id="heldRows"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+$('#topbar').innerHTML = topbarHTML();
+// ⚠️ ห้ามประกาศ ME ซ้ำที่นี่ — common.js ประกาศไว้แล้ว
+//    ประกาศซ้ำ = SyntaxError แล้วสคริปต์ทั้งหน้าไม่ทำงานเลย (หน้าโล่งโดยไม่มีข้อความบอก)
+
+/* ---------- ช่วงเวลา ---------- */
+function rangeQS() {
+  const f = dateToMs($('#from').value);
+  const t = dateToMs($('#to').value);
+  const p = new URLSearchParams();
+  // from ต้องเป็นต้นวัน ไม่ใช่สิ้นวัน ไม่งั้นรายการที่เกิดเช้าวันแรกจะหลุดออกจากช่วง
+  if (f) p.set('from', String(f - 86399000));
+  if (t) p.set('to', String(t));
+  return p.toString() ? '?' + p : '';
+}
+for (const b of $$('.quick button')) {
+  b.onclick = () => {
+    const now = new Date();
+    const set = (from, to) => { $('#from').value = from ? msToDate(from) : ''; $('#to').value = to ? msToDate(to) : ''; };
+    if (b.dataset.q === '30') set(Date.now() - 29 * 86400000, Date.now());
+    else if (b.dataset.q === 'month') set(new Date(now.getFullYear(), now.getMonth(), 1).getTime(), Date.now());
+    else if (b.dataset.q === 'year') set(new Date(now.getFullYear(), 0, 1).getTime(), Date.now());
+    else set(null, null);
+    load();
+  };
+}
+$('#from').onchange = load; $('#to').onchange = load;
+
+/* ---------- KPI ---------- */
+function kpi(k, v, s, tone, attn) {
+  const d = document.createElement('div');
+  d.className = 'kpi' + (tone ? ' tone' : '') + (attn ? ' attn' : '');
+  if (tone) d.style.setProperty('--tone', tone);
+  const a = document.createElement('div'); a.className = 'k'; a.textContent = k;
+  const b = document.createElement('div'); b.className = 'v'; b.textContent = v;
+  d.append(a, b);
+  if (s) { const c = document.createElement('div'); c.className = 's'; c.textContent = s; d.appendChild(c); }
+  return d;
+}
+
+function drawKpis(s) {
+  const box = $('#kpis'); box.innerHTML = '';
+  box.append(
+    // 2 ใบแรกเป็นยอดเงิน ไม่ใช่สถานะ จึงไม่ใส่ tone — สีเขียว/ส้ม/แดงสงวนไว้บอกว่ามีอะไรต้องจัดการ
+    kpi('มูลค่าสต็อกคงเหลือ', money(s.stockValue.total),
+      `ของสิ้นเปลือง ${money(s.stockValue.consumable)} · ครุภัณฑ์ ${money(s.stockValue.asset)}`),
+    kpi('มูลค่าที่เบิกไปในช่วงนี้', money(s.issuedValue), `${num(s.issuedLines)} รายการ`),
+    // 3 ใบนี้คือ "งานที่ต้องทำ" — ใส่พื้นสีเตือนเฉพาะตอนมีค่าจริง เพื่อให้กวาดตาเห็นทันทีว่าวันนี้ต้องจัดการอะไร
+    kpi('ใบเบิกรอจ่ายอยู่', num(s.pending), s.pending ? 'ไปที่หน้าอนุมัติและจ่ายของ' : 'ไม่มีค้าง',
+      s.pending ? 'var(--warn)' : 'var(--ok)', s.pending > 0),
+    kpi('ของใกล้หมด', num(s.lowStock), s.lowStock ? 'ต่ำกว่าจุดสั่งซื้อ' : 'ยังไม่มีรายการไหนต่ำ',
+      s.lowStock ? 'var(--warn)' : 'var(--ok)', s.lowStock > 0),
+    kpi('ครุภัณฑ์อยู่กับพนักงาน', num(s.heldAssets),
+      s.overdueAssets ? `เลยกำหนดคืน ${s.overdueAssets} ชิ้น` : 'ไม่มีชิ้นไหนเลยกำหนด',
+      s.overdueAssets ? 'var(--bad)' : 'var(--ok)', s.overdueAssets > 0),
+  );
+}
+
+/* ---------- ตาราง ---------- */
+function barCell(value, max, over) {
+  const td = document.createElement('td'); td.className = 'barcell';
+  const f = document.createElement('span');
+  f.className = 'fill' + (over ? ' over' : '');
+  f.style.width = (max > 0 ? Math.min(100, (value / max) * 100) : 0) + '%';
+  const t = document.createElement('span'); t.className = 'txt'; t.textContent = money(value);
+  td.append(f, t); return td;
+}
+function cells(tr, vals) {
+  for (const v of vals) {
+    const td = document.createElement('td');
+    if (v && v.num !== undefined) { td.className = 'num'; td.textContent = v.num; }
+    else td.textContent = v;
+    tr.appendChild(td);
+  }
+}
+
+function drawDept(rows) {
+  const tb = $('#deptRows'); tb.innerHTML = '';
+  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', '📅')); return; }
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    cells(tr, [r.dept, { num: num(r.reqs) }, { num: money(r.value) }]);
+    tr.appendChild(barCell(r.value, max));
+    tb.appendChild(tr);
+  }
+}
+
+function drawPerson(rows) {
+  const tb = $('#personRows'); tb.innerHTML = '';
+  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', '📅')); return; }
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    cells(tr, [`${r.name} (${r.emp_id})`, r.dept || '—', { num: num(r.reqs) }, { num: money(r.value) }]);
+    tb.appendChild(tr);
+  }
+}
+
+function drawItems(rows) {
+  const tb = $('#itemRows'); tb.innerHTML = '';
+  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', '📅')); return; }
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    cells(tr, [r.code, r.name, { num: num(r.qty) + ' ' + r.unit }, { num: money(r.value) }]);
+    tb.appendChild(tr);
+  }
+}
+
+function drawHeld(rows) {
+  const tb = $('#heldRows'); tb.innerHTML = '';
+  if (!rows.length) { tb.appendChild(emptyRow(6, 'ไม่มีครุภัณฑ์อยู่ในมือใคร', 'ของทุกชิ้นอยู่ในคลังครบ', '✅')); return; }
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    const due = r.due_at ? dOnly(r.due_at) + (r.overdue ? ' · เลยกำหนด' : '') : 'ไม่มีกำหนด';
+    cells(tr, [r.tag_no, r.name, `${r.holder} (${r.emp_id})`, r.dept || '—', due, { num: money(r.unit_cost) }]);
+    if (r.overdue) tr.children[4].style.color = 'var(--bad)', tr.children[4].style.fontWeight = '700';
+    tb.appendChild(tr);
+  }
+}
+
+/* ---------- งบประมาณ ---------- */
+async function loadBudget() {
+  const period = $('#period').value;
+  if (!period) return;
+  const d = await api('/api/reports/budget?period=' + encodeURIComponent(period));
+  const tb = $('#budgetRows'); tb.innerHTML = '';
+  const max = Math.max(...d.rows.map((r) => Math.max(r.amount, r.used)), 1);
+  let noBudget = 0;
+
+  for (const r of d.rows) {
+    const tr = document.createElement('tr');
+    const c1 = document.createElement('td'); c1.textContent = r.dept;
+
+    const c2 = document.createElement('td'); c2.className = 'num';
+    if (ME.role === 'admin') {
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.min = '0'; inp.step = 'any'; inp.className = 'budget-in';
+      inp.value = r.amount || '';
+      inp.placeholder = 'ยังไม่ตั้ง';
+      inp.setAttribute('aria-label', 'วงเงินของ ' + r.dept);
+      inp.onchange = async () => {
+        try {
+          await api('/api/reports/budget', { method:'PUT', body: JSON.stringify({
+            deptId: r.deptId, period, amount: inp.value || 0 }) });
+          toast('บันทึกวงเงิน ' + r.dept + ' แล้ว', 'ok');
+          await loadBudget();
+        } catch (e) { toast(e.message, 'bad'); inp.value = r.amount || ''; }
+      };
+      c2.appendChild(inp);
+    } else c2.textContent = r.amount > 0 ? money(r.amount) : '—';
+
+    const c3 = document.createElement('td'); c3.className = 'num'; c3.textContent = money(r.used);
+    const c4 = barCell(r.used, max, r.over);
+    const c5 = document.createElement('td');
+    c5.className = 'pctcell ' + (r.pct === null ? 'na' : r.over ? 'over' : '');
+    // ยังไม่ตั้งวงเงิน = ไม่คิด % ไม่งั้นจะขึ้นเหมือนใช้งบเกินทั้งที่แค่ยังไม่ได้ตั้ง
+    c5.textContent = r.pct === null ? 'ยังไม่ได้ตั้งงบ' : r.pct + '%';
+    if (r.pct === null) noBudget++;
+
+    tr.append(c1, c2, c3, c4, c5);
+    tb.appendChild(tr);
+  }
+  $('#budgetHint').textContent = ME.role === 'admin'
+    ? `แก้ตัวเลขในช่อง “วงเงิน” แล้วกด Tab เพื่อบันทึก · ยังไม่ได้ตั้งงบ ${noBudget} แผนก · งบเกินแล้วระบบแค่เตือน ไม่ได้ห้ามเบิก`
+    : `ยังไม่ได้ตั้งงบ ${noBudget} แผนก · ตั้งวงเงินได้ที่บัญชีผู้ดูแลระบบ`;
+}
+$('#period').onchange = loadBudget;
+
+/* ---------- ดาวน์โหลด ---------- */
+$('#exMv').onclick = () => download('/api/reports/export/movements' + rangeQS(), 'stock-movements.csv').catch((e) => toast(e.message, 'bad'));
+$('#exRq').onclick = () => download('/api/reports/export/requisitions' + rangeQS(), 'requisitions.csv').catch((e) => toast(e.message, 'bad'));
+$('#exHeld').onclick = () => download('/api/reports/export/held-assets', 'held-assets.csv').catch((e) => toast(e.message, 'bad'));
+
+/* ---------- โหลด ---------- */
+async function load() {
+  const qs = rangeQS();
+  const [s, dept, person, items, held] = await Promise.all([
+    api('/api/reports/summary' + qs),
+    api('/api/reports/by-dept' + qs),
+    api('/api/reports/by-person' + qs),
+    api('/api/reports/top-items' + qs),
+    api('/api/reports/held-assets'),
+  ]);
+  drawKpis(s); drawDept(dept.rows); drawPerson(person.rows); drawItems(items.rows); drawHeld(held.rows);
+}
+
+(async () => {
+  try {
+    ME = await initTopbar('report.html');
+    if (ME.role !== 'warehouse' && ME.role !== 'admin') {
+      toast('หน้านี้สำหรับผู้ดูแลคลังและผู้ดูแลระบบเท่านั้น', 'bad');
+      return setTimeout(() => location.replace('app.html'), 1400);
+    }
+    const now = new Date();
+    $('#period').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    // ตัวเลือกเดือนของเราอ่านค่าจาก change — ตั้ง .value เฉย ๆ ป้ายจะยังเป็นข้อความชวนเลือก
+    $('#period').dispatchEvent(new Event('change', { bubbles: true }));
+    await Promise.all([load(), loadBudget()]);
+  } catch (e) { toast(e.message, 'bad'); }
+})();
+</script>
+</body>
+</html>

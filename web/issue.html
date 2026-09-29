@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>อนุมัติและจ่ายของ · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  .rq{display:block; width:100%; text-align:start; font:inherit; cursor:pointer;
+      background:var(--panel); border:1px solid var(--line);
+      border-radius:var(--radius); box-shadow:var(--shadow); padding:15px 18px; margin-bottom:12px;
+      min-height:76px;}
+  .rq:hover{background:#fafbfd}
+  .rq .top{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:3px}
+  /* ลำดับสายตา: เลขที่ใบ 17px → ชื่อคน 15px → เวลา/เหตุผล 12.5px */
+  .rq .no{font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:17.5px; letter-spacing:-.01em}
+  .rq .who{font-size:15.5px; font-weight:700; color:var(--ink)}
+  .rq .when{margin-inline-start:auto; font-size:12.5px; color:var(--muted)}
+  .rq .items{font-size:12.5px; color:var(--muted); margin-top:3px}
+
+  .issue-tbl{width:100%; border-collapse:collapse; font-size:14.5px}
+  .issue-tbl th,.issue-tbl td{padding:9px 10px; border-bottom:1px solid var(--line); text-align:start; vertical-align:top}
+  .issue-tbl th{font-size:13.5px; color:var(--ink-soft); background:var(--panel-2)}
+  .issue-tbl .num{text-align:end; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .issue-tbl input[type=number]{width:92px; min-height:44px; text-align:end; padding:6px 9px; font-size:15.5px}
+  .issue-tbl .stock{font-size:12.5px; color:var(--muted); display:block; margin-top:3px}
+  .issue-tbl .stock.short{color:var(--bad); font-weight:700}
+  .tagpick{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+  .tagpick label{
+    display:inline-flex; align-items:center; gap:5px; font-size:13.5px;
+    border:1px solid var(--line); border-radius:8px; padding:3px 9px; cursor:pointer; background:var(--panel);
+  }
+  .tagpick label:has(input:checked){border-color:var(--ok); background:var(--ok-bg); font-weight:700}
+  .tagpick input{width:auto; margin:0}
+  .tagpick .none{font-size:13.5px; color:var(--bad)}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:5px 16px; font-size:14.5px; margin-bottom:16px}
+  .kv dt{color:var(--muted)} .kv dd{margin:0; font-weight:700}
+  .sub-h{font-size:13.5px; font-weight:700; color:var(--ink-soft); margin:18px 0 9px; display:flex; align-items:center; gap:9px}
+  .sub-h::after{content:""; flex:1; height:1px; background:var(--line)}
+  .bar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px}
+  .bar .grow{flex:1}
+  .bar select{width:auto; min-width:180px}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar"></header>
+
+<main class="page">
+  <h1>อนุมัติและจ่ายของ</h1>
+  <p class="sub">พนักงานมารับของที่คลัง — เปิดใบของเขา เลือกจำนวนที่จ่ายจริง แล้วกดอนุมัติ ระบบตัดสต็อกให้ทันที</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true"  data-t="queue">รอจ่ายของ<span class="n" id="nQueue" hidden></span></button>
+    <button role="tab" aria-selected="false" data-t="all">ทั้งหมด</button>
+  </div>
+
+  <section id="pane-queue">
+    <!-- ค้นหาที่เคาน์เตอร์: พนักงานยืนรออยู่ตรงหน้า บอกชื่อหรือเลขที่ใบ แล้วต้องเจอทันที -->
+    <div class="bar">
+      <input type="search" id="qq" placeholder="ค้นหาชื่อพนักงาน รหัส หรือเลขที่ใบ">
+      <span class="grow"></span>
+    </div>
+    <div id="queue"></div>
+  </section>
+
+  <section id="pane-all" hidden>
+    <div class="bar">
+      <select id="fst">
+        <option value="">ทุกสถานะ</option>
+        <option value="issued">รับของแล้ว</option>
+        <option value="partial">ได้บางส่วน</option>
+        <option value="rejected">ถูกปฏิเสธ</option>
+        <option value="cancelled">ยกเลิกแล้ว</option>
+      </select>
+      <span class="grow"></span>
+    </div>
+    <div id="all"></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+$('#topbar').innerHTML = topbarHTML();
+
+for (const b of $$('.tabs button')) {
+  b.onclick = () => {
+    for (const x of $$('.tabs button')) x.setAttribute('aria-selected', String(x === b));
+    $('#pane-queue').hidden = b.dataset.t !== 'queue';
+    $('#pane-all').hidden = b.dataset.t !== 'all';
+    if (b.dataset.t === 'all') loadAll();
+  };
+}
+$('#fst').onchange = loadAll;
+
+function card(r) {
+  const st = REQ_STATUS[r.status] || { t:r.status, c:'mute' };
+  const el = document.createElement('button');
+  el.className = 'rq';
+  el.onclick = () => openReq(r.id);
+
+  const top = document.createElement('div'); top.className = 'top';
+  const no = document.createElement('span'); no.className = 'no'; no.textContent = r.no;
+  const when = document.createElement('span'); when.className = 'when'; when.textContent = dt(r.submittedAt);
+  top.append(no, pill(st.t, st.c), when);
+
+  const who = document.createElement('div'); who.className = 'who';
+  who.textContent = `${r.requester} (${r.requesterEmp})` + (r.dept ? ' · ' + r.dept : '');
+
+  const items = document.createElement('div'); items.className = 'items';
+  items.textContent = r.purpose || 'ไม่ได้ระบุเหตุผล';
+
+  el.append(top, who, items);
+  return el;
+}
+
+let QUEUE = [];
+
+function drawQueue() {
+  const q = $('#qq').value.trim().toLowerCase();
+  const list = QUEUE.filter((r) => !q ||
+    ((r.no || '') + ' ' + r.requester + ' ' + r.requesterEmp + ' ' + (r.dept || '') + ' ' + (r.purpose || ''))
+      .toLowerCase().includes(q));
+  const box = $('#queue'); box.innerHTML = '';
+  if (!list.length) {
+    box.appendChild(QUEUE.length
+      ? emptyBox('🔍', 'ไม่พบใบที่ตรงกับคำค้น', 'ลองค้นด้วยรหัสพนักงาน ชื่อ หรือเลขที่ใบ เช่น RQ-2608-001')
+      : emptyBox('☕', 'ยังไม่มีใครส่งใบเบิกมา', 'คิวว่าง — เมื่อมีพนักงานส่งใบ ใบจะเด้งขึ้นที่นี่และมีเลขบนกระดิ่ง'));
+    return;
+  }
+  for (const r of list) box.appendChild(card(r));
+}
+
+async function loadQueue() {
+  const box0 = $('#queue');
+  if (box0 && !QUEUE.length) { box0.innerHTML = ''; box0.appendChild(skelCards(2, true)); }
+  QUEUE = (await api('/api/requisitions?box=queue')).requisitions;
+  $('#nQueue').hidden = QUEUE.length === 0;
+  $('#nQueue').textContent = QUEUE.length;
+  drawQueue();
+}
+$('#qq').oninput = drawQueue;
+
+async function loadAll() {
+  const st = $('#fst').value;
+  const d = await api('/api/requisitions?box=all' + (st ? '&status=' + st : ''));
+  const box = $('#all'); box.innerHTML = '';
+  if (!d.requisitions.length) {
+    box.appendChild(emptyBox('🗂️', 'ไม่มีใบเบิกที่ตรงกับตัวกรอง', 'ลองเปลี่ยนสถานะที่เลือกไว้ หรือดู "ทั้งหมด"'));
+    return;
+  }
+  for (const r of d.requisitions) box.appendChild(card(r));
+}
+
+/* ---------- หน้าจ่ายของ ---------- */
+async function openReq(id) {
+  let d;
+  try { d = (await api('/api/requisitions/' + id)).requisition; }
+  catch (e) { return toast(e.message, 'bad'); }
+
+  const editable = d.status === 'pending';
+  const box = document.createElement('div');
+
+  const kv = document.createElement('dl'); kv.className = 'kv';
+  const st = REQ_STATUS[d.status] || { t:d.status, c:'mute' };
+  const pairs = [
+    ['ผู้ขอ', `${d.requester} (${d.requesterEmp})`],
+    ['แผนก', d.dept || '—'],
+    ['เหตุผล', d.purpose || '—'],
+    ['อยากได้ภายใน', dOnly(d.needBy)],
+    ['ส่งเมื่อ', dt(d.submittedAt)],
+  ];
+  for (const [k, v] of pairs) {
+    const a = document.createElement('dt'); a.textContent = k;
+    const b = document.createElement('dd'); b.textContent = v;
+    kv.append(a, b);
+  }
+  if (!editable) {
+    const a = document.createElement('dt'); a.textContent = 'สถานะ';
+    const b = document.createElement('dd'); b.appendChild(pill(st.t, st.c));
+    kv.append(a, b);
+  }
+  box.appendChild(kv);
+
+  const h = document.createElement('div'); h.className = 'sub-h';
+  h.textContent = editable ? 'เลือกจำนวนที่จ่ายจริง' : 'รายการของ';
+  box.appendChild(h);
+
+  const t = document.createElement('table'); t.className = 'issue-tbl';
+  t.innerHTML = '<thead><tr><th>สินค้า</th><th class="num">ขอมา</th><th>' +
+    (editable ? 'จ่ายจริง' : 'จ่ายไป') + '</th></tr></thead>';
+  const tb = document.createElement('tbody');
+  const state = [];
+
+  for (const l of d.lines) {
+    const tr = document.createElement('tr');
+    const c1 = document.createElement('td');
+    c1.textContent = l.name;
+    const sm = document.createElement('span'); sm.className = 'stock';
+    c1.appendChild(sm);
+
+    const c2 = document.createElement('td'); c2.className = 'num';
+    c2.textContent = num(l.qtyRequested) + ' ' + l.unit;
+
+    const c3 = document.createElement('td');
+
+    if (!editable) {
+      c3.className = 'num';
+      c3.textContent = num(l.qtyIssued) + ' ' + l.unit + (l.issuedTags.length ? ' · ' + l.issuedTags.join(', ') : '');
+      sm.textContent = l.code + ' · ' + KIND_LABEL[l.kind];
+    } else if (l.kind === 'asset') {
+      sm.textContent = `${l.code} · ครุภัณฑ์ · พร้อมจ่าย ${l.tags.length} ชิ้น`;
+      if (l.tags.length < l.qtyRequested) sm.className = 'stock short';
+      const wrap = document.createElement('div'); wrap.className = 'tagpick';
+      if (!l.tags.length) {
+        const n = document.createElement('span'); n.className = 'none'; n.textContent = 'ไม่มีชิ้นที่พร้อมจ่าย';
+        wrap.appendChild(n);
+      }
+      const entry = { reqItemId: l.id, kind: 'asset', tagIds: [], max: l.qtyRequested, name: l.name };
+      for (const tag of l.tags) {
+        const lb = document.createElement('label');
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = tag.id;
+        cb.onchange = () => {
+          entry.tagIds = [...wrap.querySelectorAll('input:checked')].map((x) => x.value);
+          if (entry.tagIds.length > entry.max) {
+            cb.checked = false;
+            entry.tagIds = [...wrap.querySelectorAll('input:checked')].map((x) => x.value);
+            toast(`"${l.name}" ขอมาแค่ ${l.qtyRequested} ชิ้น`, 'bad');
+          }
+        };
+        const sp = document.createElement('span'); sp.textContent = tag.tag_no;
+        lb.append(cb, sp); wrap.appendChild(lb);
+      }
+      // กำหนดคืน — ไม่บังคับ ปล่อยว่าง = ถือได้ไม่มีกำหนด
+      const due = document.createElement('label');
+      due.className = 'fld'; due.style.marginTop = '10px'; due.style.marginBottom = '0';
+      due.innerHTML = '<span>กำหนดคืน (ไม่บังคับ)</span>';
+      const dueIn = document.createElement('input'); dueIn.type = 'date';
+      dueIn.onchange = () => { entry.dueAt = dateToMs(dueIn.value); };
+      due.appendChild(dueIn);
+      c3.append(wrap, due);
+      state.push(entry);
+    } else {
+      sm.textContent = `${l.code} · เบิกได้ ${num(l.available)} ${l.unit}`;
+      if (l.available < l.qtyRequested) sm.className = 'stock short';
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.min = '0'; inp.step = 'any';
+      inp.dataset.step = '1';   // ให้ common.js เติมปุ่ม - + ของเราให้
+      // ตั้งค่าตั้งต้นเป็น "เท่าที่จ่ายได้" — ของครบก็เท่าที่ขอ ของไม่พอก็เท่าที่มี
+      inp.value = Math.min(l.qtyRequested, Math.max(l.available, 0));
+      inp.setAttribute('aria-label', 'จำนวนที่จ่ายจริงของ ' + l.name);
+      const entry = { reqItemId: l.id, kind: 'consumable', qty: inp.value, name: l.name };
+      inp.oninput = () => { entry.qty = inp.value; };
+      c3.appendChild(inp);
+      state.push(entry);
+    }
+    tr.append(c1, c2, c3); tb.appendChild(tr);
+  }
+  t.appendChild(tb); box.appendChild(t);
+
+  if (d.approvals.length) {
+    const h2 = document.createElement('div'); h2.className = 'sub-h'; h2.textContent = 'การตัดสิน';
+    box.appendChild(h2);
+    for (const a of d.approvals) {
+      const p = document.createElement('p'); p.style.fontSize = '14.5px'; p.style.margin = '0 0 6px';
+      p.textContent = `${a.decision === 'approve' ? 'อนุมัติและจ่ายของ' : 'ปฏิเสธ'} โดย ${a.approver} · ${dt(a.decidedAt)}`
+        + (a.comment ? ` — ${a.comment}` : '');
+      box.appendChild(p);
+    }
+  }
+
+  let noteIn = null;
+  if (editable) {
+    const note = document.createElement('label');
+    note.className = 'fld'; note.style.marginTop = '18px';
+    note.innerHTML = '<span>หมายเหตุ (ไม่บังคับ · บังคับกรอกถ้าจะปฏิเสธ)</span>';
+    noteIn = document.createElement('input'); noteIn.type = 'text';
+    noteIn.placeholder = 'เช่น จ่ายได้แค่บางส่วนเพราะของไม่พอ';
+    note.appendChild(noteIn); box.appendChild(note);
+  }
+
+  const buttons = [{ label:'ปิด', onClick: closeModal }];
+  if (editable) {
+    buttons.push({ label:'ปฏิเสธใบนี้', danger:true, onClick: async () => {
+      const c = noteIn.value.trim();
+      if (!c) return showErr(box, 'กรุณาระบุเหตุผลที่ปฏิเสธในช่องหมายเหตุ');
+      try {
+        await api('/api/requisitions/' + d.id + '/reject', { method:'POST', body: JSON.stringify({ comment: c }) });
+        closeModal(); toast('ปฏิเสธใบเบิกแล้ว', 'ok'); await loadQueue();
+      } catch (e) { showErr(box, e.message); }
+    } });
+    buttons.push({ label:'อนุมัติและจ่ายของ', primary:true, onClick: async () => {
+      const lines = state.map((s) => s.kind === 'asset'
+        ? { reqItemId: s.reqItemId, tagIds: s.tagIds, dueAt: s.dueAt }
+        : { reqItemId: s.reqItemId, qty: s.qty });
+      const total = lines.reduce((n, l) => n + (l.tagIds ? l.tagIds.length : Number(l.qty) || 0), 0);
+      if (total <= 0) return showErr(box, 'ยังไม่ได้เลือกจ่ายของสักรายการ ถ้าไม่จ่ายเลยให้กด “ปฏิเสธใบนี้”');
+      try {
+        const out = await api('/api/requisitions/' + d.id + '/issue', {
+          method:'POST', body: JSON.stringify({ lines, comment: noteIn.value.trim() }) });
+        closeModal();
+        toast(out.status === 'partial'
+          ? `จ่ายบางส่วนแล้ว · มูลค่า ${money(out.totalCost)} — ส่วนที่เหลือให้พนักงานเปิดใบใหม่`
+          : `จ่ายของครบแล้ว · มูลค่า ${money(out.totalCost)}`, 'ok');
+        await loadQueue();
+      } catch (e) { showErr(box, e.message); }
+    } });
+  }
+  // sticky: หน้านี้มีช่อง "จ่ายจริง" ที่คลังพิมพ์แก้ไว้ กดนอกกล่องแล้วหายจะต้องไล่กรอกใหม่ทั้งใบ
+  openModal('ใบเบิก ' + d.no, box, buttons, { wide:true, sticky:true });
+  // บนมือถือให้เต็มจอ — ตอนยืนที่เคาน์เตอร์ต้องเห็นรายการทั้งใบโดยไม่ต้องเลื่อนสองชั้น
+  $('#modal').classList.add('sheet');
+}
+
+(async () => {
+  try {
+    const me = await initTopbar('issue.html');
+    if (me.role !== 'warehouse' && me.role !== 'admin') {
+      toast('หน้านี้สำหรับผู้ดูแลคลังเท่านั้น', 'bad');
+      return setTimeout(() => location.replace('app.html'), 1400);
+    }
+    await loadQueue();
+  } catch (e) {
+    const box = $('#queue');
+    if (box) { box.innerHTML = ''; box.appendChild(errorBox(e.message, () => location.reload())); }
+    toast(e.message, 'bad');
+  }
+})();
+</script>
+</body>
+</html>

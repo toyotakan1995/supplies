@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ครุภัณฑ์ · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  .bar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
+  .bar input[type=search]{max-width:320px}
+  .bar .grow{flex:1}
+  .alert{background:var(--bad-bg); border:1px solid #f3c9c5;
+         border-radius:10px; padding:12px 15px; font-size:14.5px; margin-bottom:16px}
+  .alert b{color:var(--bad)}
+  .alert[hidden]{display:none}
+  table{min-width:820px}
+  td.tag{font-family:ui-monospace,Consolas,monospace; font-weight:700; white-space:nowrap}
+  td.who small{display:block; color:var(--muted); font-size:12.5px}
+  .due.over{color:var(--bad); font-weight:700}
+  tr.over{background:#fff7f6}
+  tr.over:hover{background:#ffefee}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar"></header>
+
+<main class="page">
+  <h1>ครุภัณฑ์ที่อยู่ในมือพนักงาน</h1>
+  <p class="sub">ดูว่าใครถืออะไรอยู่ตอนนี้ และบันทึกการรับคืนเมื่อพนักงานนำมาส่ง</p>
+
+  <div class="alert" id="odAlert" hidden></div>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="ค้นหาเลขครุภัณฑ์ ชื่ออุปกรณ์ ชื่อพนักงาน หรือแผนก">
+    <span class="grow"></span>
+    <button class="btn btn-ghost" id="btnRemind">📣 เตือนคนที่เลยกำหนดคืน</button>
+  </div>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>เลขครุภัณฑ์</th><th>อุปกรณ์</th><th>ผู้ถือครอง</th>
+        <th>รับไปเมื่อ</th><th>กำหนดคืน</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+$('#topbar').innerHTML = topbarHTML();
+let TAGS = [];
+
+function draw() {
+  const tb = $('#rows'); tb.innerHTML = '';
+  if (!TAGS.length) { tb.appendChild(emptyRow(6, 'ตอนนี้ไม่มีครุภัณฑ์อยู่ในมือใครเลย', 'ของทุกชิ้นอยู่ในคลังครบ — เมื่อมีการจ่ายครุภัณฑ์ออกไป รายการจะขึ้นที่นี่', '✅')); return; }
+  for (const t of TAGS) {
+    const tr = document.createElement('tr');
+    if (t.overdue) tr.className = 'over';
+
+    const c1 = document.createElement('td'); c1.className = 'tag'; c1.textContent = t.tagNo;
+    const c2 = document.createElement('td'); c2.textContent = t.item;
+    const c3 = document.createElement('td'); c3.className = 'who';
+    c3.textContent = t.holder;
+    const s = document.createElement('small');
+    s.textContent = t.holderEmp + (t.dept ? ' · ' + t.dept : ''); c3.appendChild(s);
+    const c4 = document.createElement('td'); c4.textContent = dOnly(t.issuedAt);
+    const c5 = document.createElement('td');
+    if (!t.dueAt) c5.textContent = 'ไม่มีกำหนด';
+    else { c5.className = 'due' + (t.overdue ? ' over' : ''); c5.textContent = dOnly(t.dueAt) + (t.overdue ? ' · เลยกำหนด' : ''); }
+    const c6 = document.createElement('td'); c6.className = 'act';
+    c6.appendChild(rowBtn('รับคืน', 'pri', () => openReturn(t)));
+
+    tr.append(c1, c2, c3, c4, c5, c6);
+    tb.appendChild(tr);
+  }
+}
+
+function openReturn(t) {
+  const box = form(`
+    <p class="fhint" style="margin-top:0">${t.item} · ${t.tagNo} — ถืออยู่โดย ${t.holder}</p>
+    <label class="fld"><span>สภาพของที่รับคืน</span>
+      <select id="cond">
+        <option value="available">ปกติ พร้อมใช้งานต่อ</option>
+        <option value="maintenance">ต้องส่งซ่อมก่อน</option>
+      </select>
+    </label>
+    <p class="fhint">เลือก “ต้องส่งซ่อม” แล้วของจะยังไม่กลับเข้าสต็อกให้คนอื่นเบิก จนกว่าจะเปลี่ยนสถานะเป็นพร้อมใช้งานที่หน้าสินค้า</p>
+    <label class="fld"><span>หมายเหตุ</span><input type="text" id="note" placeholder="เช่น สายชาร์จหาย · จอมีรอย"></label>
+  `);
+  const save = async () => {
+    try {
+      const out = await api('/api/assets/' + t.id + '/return', { method:'POST', body: JSON.stringify({
+        condition: $('#cond', box).value, note: $('#note', box).value.trim() }) });
+      closeModal();
+      toast(out.status === 'available' ? 'รับคืนแล้ว ของกลับเข้าคลัง' : 'รับคืนแล้ว ส่งซ่อมต่อ', 'ok');
+      await load();
+    } catch (e) { showErr(box, e.message); }
+  };
+  openModal('รับคืนครุภัณฑ์', box, [
+    { label:'ยกเลิก', onClick: closeModal },
+    { label:'บันทึกรับคืน', primary:true, onClick: save },
+  ], { sticky:true });
+}
+
+$('#btnRemind').onclick = async () => {
+  const n = TAGS.filter((t) => t.overdue).length;
+  if (!n) return toast('ตอนนี้ไม่มีใครเลยกำหนดคืน', 'ok');
+  try {
+    const out = await api('/api/assets/remind-overdue', { method:'POST' });
+    toast(`ส่งแจ้งเตือนแล้ว ${out.sent} รายการ`, 'ok');
+  } catch (e) { toast(e.message, 'bad'); }
+};
+
+let timer;
+$('#q').oninput = () => { clearTimeout(timer); timer = setTimeout(load, 250); };
+
+async function load() {
+  const q = $('#q').value.trim();
+  const d = await api('/api/assets/held' + (q ? '?q=' + encodeURIComponent(q) : ''));
+  TAGS = d.tags;
+  $('#odAlert').hidden = d.overdue === 0;
+  if (d.overdue) {
+    $('#odAlert').innerHTML = '';
+    const b = document.createElement('b'); b.textContent = `เลยกำหนดคืน ${d.overdue} ชิ้น`;
+    $('#odAlert').append(b, ' — กดปุ่ม “เตือนคนที่เลยกำหนดคืน” เพื่อส่งแจ้งเตือนถึงผู้ถือครองทุกคน');
+  }
+  draw();
+}
+
+(async () => {
+  try {
+    const me = await initTopbar('assets.html');
+    if (me.role !== 'warehouse' && me.role !== 'admin') {
+      toast('หน้านี้สำหรับผู้ดูแลคลังเท่านั้น', 'bad');
+      return setTimeout(() => location.replace('app.html'), 1400);
+    }
+    await load();
+  } catch (e) {
+    const tb = $('#rows');
+    if (tb) { tb.innerHTML = ''; const tr = document.createElement('tr'); const td = document.createElement('td');
+      td.colSpan = 6; td.appendChild(errorBox(e.message, () => location.reload())); tr.appendChild(td); tb.appendChild(tr); }
+    toast(e.message, 'bad');
+  }
+})();
+</script>
+</body>
+</html>

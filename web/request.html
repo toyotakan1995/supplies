@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ใบเบิกของฉัน · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+
+  /* ---------- รายการใบเบิก ---------- */
+  .rq{
+    display:block; width:100%; text-align:start; font:inherit; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    box-shadow:var(--shadow); padding:14px 16px; margin-bottom:10px; min-height:64px;
+  }
+  .rq:hover{background:#fafbfd}
+  .rq .top{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+  .rq .no{font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:14.5px}
+  .rq .when{margin-inline-start:auto; font-size:12.5px; color:var(--muted)}
+  .rq .sum{font-size:14.5px; color:var(--ink-soft); margin-top:5px}
+  .rq .sum b{color:var(--ink); font-weight:700}
+  .rq .next{
+    display:block; margin-top:7px; font-size:13.5px; font-weight:700; color:var(--warn);
+  }
+
+  /* ---------- ตัวเลือกของ ---------- */
+  /* 🐞 แถบค้นหาติดบนสุด แต่ `.mbody` มี padding 20px อยู่ข้างบน
+     ช่องว่าง 20px นั้น "ใส" การ์ดที่เลื่อนผ่านจึงโผล่ขึ้นมาให้เห็นเป็นเศษ ๆ ลอยอยู่เหนือช่องค้นหา
+     แก้โดยดึงแถบขึ้นไปกินพื้นที่ padding ด้วย (margin ลบ + padding เท่ากัน) แล้วพื้นขาวจะบังมิด */
+  /* หน้ายืนยันหลังส่ง */
+  .sent{text-align:center; padding:26px 18px 8px}
+  .sent .ic{display:block; font-size:44px; line-height:1; margin-bottom:12px}
+  .sent b{display:block; font-family:var(--font-head); font-size:21px; font-weight:700}
+  .sent .no{
+    display:inline-block; margin-top:10px; font-family:ui-monospace,Consolas,monospace; font-weight:700;
+    font-size:15px; background:var(--ok-bg); color:#0b6b42; border-radius:999px; padding:5px 14px;
+  }
+  .sent .hint{display:block; margin-top:16px; font-size:15.5px; line-height:1.75; color:var(--ink-soft)}
+
+  .picksearch{
+    position:sticky; top:0; z-index:3; background:var(--panel);
+    padding-bottom:12px; border-bottom:1px solid var(--line);
+  }
+  /* 🐞 `.mbody` มี padding 20px อยู่เหนือแถบค้นหา · ช่องว่างนั้น "ใส"
+     การ์ดที่เลื่อนผ่านจึงโผล่ขึ้นมาให้เห็นเป็นเศษ ๆ ลอยอยู่เหนือช่องค้นหา (ผู้ใช้ทักว่า "เห็นมันลอย ๆ")
+     🔑 ใส่ margin ลบให้แถบไม่ได้ผล เพราะแถบอยู่ใน div ห่ออีกชั้นที่ JS สร้าง — ระยะไม่ยุบตามที่คิด
+     จึงยืดพื้นขาวขึ้นไปด้วย ::before แทน ปิดช่องนั้นตรง ๆ ไม่ต้องพึ่งโครงสร้าง DOM */
+  .picksearch::before{
+    content:''; position:absolute; left:0; right:0; bottom:100%; height:24px;
+    background:var(--panel);
+  }
+  /* ---------- ตะแกรงการ์ดเลือกของ ----------
+     พนักงานเลือกของด้วย "หน้าตา" เป็นหลัก การ์ดจึงให้รูปเป็นพระเอกเต็มความกว้าง
+     minmax(168px,1fr) → จอ 320 ได้ 1 ช่อง · 390 ได้ 2 · แท็บเล็ต 3-4 · เดสก์ท็อป 4-5 ช่อง */
+  .plist{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:9px; align-items:start}
+  .prow{
+    display:flex; flex-direction:column; align-items:stretch; gap:9px; width:100%; height:100%;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:10px; font:inherit; text-align:start; cursor:pointer; color:inherit;
+  }
+  .prow:hover{background:var(--panel-2)}
+  .prow.picked{border-color:var(--brand); background:#fff7f8}
+  /* ของหมด — กดไม่ได้ · ทำให้จางลงพอให้รู้ว่าคนละสถานะ แต่ยังอ่านชื่อออก (ยังต้องรู้ว่าคลังมีของอะไรบ้าง)
+     ห้ามซ่อนทิ้ง ไม่งั้นพนักงานจะนึกว่าไม่มีของชิ้นนี้ในระบบแล้วไปขอซื้อใหม่ */
+  .prow.soldout{cursor:default; background:var(--panel)}
+  .prow.soldout:hover{background:var(--panel)}
+  .prow.soldout .ithumb, .prow.soldout .info{opacity:.5}
+  /* รูปสินค้าในการ์ด — จัตุรัส กว้างเต็มการ์ด (ใหญ่กว่าเดิม 44px หลายเท่า) */
+  /* max-height กันเคสจอแคบที่เหลือ 1 ช่อง — ถ้าปล่อยจัตุรัสตามความกว้าง รูปจะสูง 318px กินทั้งจอเห็นได้ทีละใบ */
+  .prow .ithumb{width:100%; height:auto; aspect-ratio:1/1; max-height:190px; border-radius:11px; font-size:40px}
+  .prow .info{flex:1 1 auto; min-width:0}
+  /* ชื่อยาวได้ 2 บรรทัดแล้วตัดด้วย … — ในการ์ดมีที่พอ ไม่ต้องบีบเหลือบรรทัดเดียวเหมือนตอนเป็นแถว */
+  .prow .info b{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+                font-size:15.5px; font-weight:700; line-height:1.35}
+  .prow .info small{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;
+                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .prow .stock{font-size:13.5px; color:var(--ink-soft); white-space:nowrap; font-variant-numeric:tabular-nums;
+               align-self:flex-start; background:var(--panel-2); border-radius:999px; padding:3px 10px}
+  .prow .stock.out{color:var(--bad); font-weight:700; background:var(--bad-bg)}
+
+  /* ปุ่ม − จำนวน + — กดง่ายกว่าพิมพ์ตัวเลขบนมือถือมาก */
+  .step{display:flex; align-items:center; gap:2px; flex:0 0 auto}
+  /* ในการ์ด: กางเต็มความกว้าง ปุ่ม − ซ้ายสุด + ขวาสุด เลขอยู่กลาง · ดันไปชิดล่างการ์ดเสมอ
+     (margin-top:auto ทำให้การ์ดในแถวเดียวกันมีแถบปุ่มอยู่ระดับเดียวกันแม้ชื่อยาวไม่เท่ากัน) */
+  .prow .step{width:100%; justify-content:space-between; margin-top:auto}
+  .step button{
+    width:40px; height:40px; flex:0 0 auto; font:inherit; font-size:20px; line-height:1; cursor:pointer;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:10px;
+  }
+  .step button:hover{background:var(--panel-2)}
+  /* 🔑 ต้องเขียนเป็น `.prow .step input` ให้ชนะกฎ `input:not([type=checkbox]):not([type=radio]){width:100%}`
+     ของ brand.css (น้ำหนักเท่ากัน 0-2-1 แต่ไฟล์นี้ประกาศทีหลังจึงชนะ)
+     ถ้าใช้แค่ `.step input` จะแพ้ → ช่องตัวเลขกางเต็มแถว บีบชื่อสินค้าจนเหลือคอลัมน์แคบ ๆ
+     แล้วชื่อไทยห่อลงมาทีละตัวอักษร (เจอจริงบนมือถือ) */
+  .prow .step input, .step input{
+    width:52px; flex:0 0 52px; text-align:center; font-size:16px; font-weight:700; padding:8px 2px;
+    border:0; background:none; font-variant-numeric:tabular-nums;
+  }
+  .step input:focus{outline:none; background:var(--panel-2); border-radius:8px}
+  .step button:disabled{opacity:.4; cursor:not-allowed}
+  /* ป้ายบอกเพดาน — อยู่ใต้แถบปุ่ม กินเต็มความกว้างการ์ด */
+  .step .cap{flex:1 1 100%; text-align:center; font-size:12px; color:var(--muted); margin-top:2px}
+  .step .cap.full{color:#7a4f04; font-weight:700}
+
+  /* ขั้นที่ 2 "ของที่จะเบิก" — เป็นรายการยืนยันจำนวน ไม่ใช่หน้าเลือกของ
+     จึงคงเป็นแถวเรียงลงมา (กวาดตาดูจำนวนได้เร็วกว่าตะแกรง) แต่ยังมีภาพย่อเล็ก ๆ กันหยิบผิด */
+  .plist.cartlist{grid-template-columns:1fr; gap:8px}
+  .plist.cartlist .prow{flex-direction:row; align-items:center; gap:12px; height:auto; padding:10px 12px}
+  .plist.cartlist .prow .ithumb{width:44px; height:44px; flex:0 0 44px; aspect-ratio:auto; max-height:none;
+                                border-radius:9px; font-size:19px}
+  .plist.cartlist .prow .info b{-webkit-line-clamp:1}
+  .plist.cartlist .prow .step{width:auto; margin-top:0; flex:0 0 auto}
+  @media (max-width:430px){
+    .plist.cartlist .prow{flex-wrap:wrap; row-gap:8px}
+    .plist.cartlist .prow .step{width:100%; justify-content:space-between}
+  }
+
+  /* จอใหญ่ขึ้นให้การ์ด (และรูป) ใหญ่ตาม ไม่ใช่เพิ่มจำนวนช่องอย่างเดียว
+     ไม่งั้นบนเดสก์ท็อปจะได้ 5 ช่องเล็ก ๆ รูปเท่าเดิมกับมือถือ */
+  @media (min-width:700px){
+    .plist{grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px}
+    .prow .ithumb{max-height:260px}
+  }
+
+  /* จอเล็กมาก (320px) เหลือ 1 ช่อง การ์ดกว้างเต็มจอ
+     ถ้าปล่อยรูปเป็นจัตุรัสจะสูงจนเห็นได้ทีละการ์ดเดียว — บีบเป็นแนวนอนแทน */
+  @media (max-width:360px){
+    .prow .ithumb{aspect-ratio:16/10}
+  }
+
+  .picked-head{
+    font-size:13.5px; font-weight:700; color:var(--ink-soft); margin:0 0 10px;
+    display:flex; align-items:center; gap:9px;
+  }
+  .picked-head::after{content:""; flex:1; height:1px; background:var(--line)}
+  .cartcount{font-size:14.5px; color:var(--muted); margin-inline-end:auto; align-self:center}
+  .cartcount b{color:var(--ink); font-weight:700}
+
+  /* ---------- รายละเอียดใบ ---------- */
+  /* แถบบนสุด: สถานะซ้าย วันที่ขวา */
+  .rq-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px}
+  .rq-top .when{margin-inline-start:auto; font-size:13px; color:var(--muted)}
+
+  /* "ขั้นต่อไป" = สิ่งที่คนเปิดใบต้องทำต่อ จึงให้ตัวใหญ่กว่าข้อมูลอื่นในกล่อง
+     ป้าย "ขั้นต่อไป" เป็นแค่ฉลากเล็ก ๆ ประโยคสั่งงานคือพระเอก */
+  .nextstep{display:flex; align-items:flex-start; gap:12px}
+  .nextstep .ic{font-size:22px; line-height:1.25; flex:0 0 auto}
+  .nextstep .tx{min-width:0}
+  .nextstep .tx b{display:block; font-size:12.5px; font-weight:600; opacity:.9; margin-bottom:1px}
+  .nextstep .act{font-size:16.5px; font-weight:700; line-height:1.5}
+
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:7px 16px; font-size:14.5px; margin:16px 0 4px}
+  .kv dt{color:var(--muted)} .kv dd{margin:0; font-weight:700}
+  .sub-h{font-size:13.5px; font-weight:700; color:var(--ink-soft); margin:18px 0 9px; display:flex; align-items:center; gap:9px}
+  .sub-h::after{content:""; flex:1; height:1px; background:var(--line); order:1}
+  /* ตัวนับอยู่ขวาสุด (order 2) เส้นคั่นจึงอยู่ระหว่างหัวข้อกับตัวนับ */
+  .sub-h .cnt{order:2; font-weight:400; color:var(--muted); font-size:12.5px}
+
+  /* รายการของ — กล่องเดียว แถวคั่นด้วยเส้น อ่านเป็นคู่ "ชื่อของ ↔ จำนวน" */
+  .lines{border:1px solid var(--line); border-radius:12px; overflow:hidden}
+  .line{display:flex; align-items:center; gap:14px; padding:12px 14px; border-bottom:1px solid var(--line)}
+  .line:last-child{border-bottom:0}
+  .line:nth-child(even){background:var(--panel-2)}
+  .line .lx{flex:1; min-width:0}
+  .line .lx b{display:block; font-size:15.5px; font-weight:700; line-height:1.4; overflow-wrap:anywhere}
+  .line .lx small{display:block; font-size:12.5px; color:var(--muted); margin-top:2px; overflow-wrap:anywhere}
+  .line .lq{flex:0 0 auto; text-align:end; font-variant-numeric:tabular-nums}
+  .line .want{display:block; font-size:12.5px; color:var(--muted)}
+  .line .got{display:block; font-size:14.5px; font-weight:700; margin-top:2px}
+  .line .got.ok{color:var(--ok)}          /* ได้ของแล้ว = เขียว ตามความหมายสีของระบบ */
+  .line .got.wait{color:var(--muted); font-weight:400}
+  .line .got.none{color:var(--bad)}
+
+  /* คำตอบจากคลัง — การ์ดมีไอคอนนำ แทนบรรทัดข้อความลอย ๆ */
+  .note-line{display:flex; gap:11px; align-items:flex-start; font-size:14.5px; margin:0 0 8px;
+             background:var(--panel-2); border:1px solid var(--line); border-radius:11px; padding:11px 13px}
+  .note-line.bad{background:var(--bad-bg); border-color:#f3c9c5}
+  .note-line .ic{font-size:17px; line-height:1.35; flex:0 0 auto}
+  .note-line b{display:block; font-weight:700}
+  .note-line small{display:block; font-size:12.5px; color:var(--muted); margin-top:1px}
+  .note-line .cm{display:block; margin-top:5px; color:var(--ink-soft)}
+
+  /* ---------- ของที่ถืออยู่ ---------- */
+  .held{display:grid; gap:9px}
+  .held .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 15px;
+    display:flex; align-items:center; gap:12px; min-height:62px;
+  }
+  .held .card.over{background:var(--bad-bg); border-color:#f3c9c5}
+  .held .tx{flex:1; min-width:0}
+  .held .tx b{display:block; font-size:15.5px}
+  .held .tx small{display:block; font-size:12.5px; color:var(--muted); margin-top:1px}
+  .held .due{font-size:13.5px; white-space:nowrap; text-align:end}
+  .held .due.over{color:var(--bad); font-weight:700}
+
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar"></header>
+
+<main class="page narrow">
+  <div class="pagehead">
+    <div class="t">
+      <h1>ใบเบิกของฉัน</h1>
+      <p class="sub">ติดตามว่าใบไหนรอคลังอยู่ ใบไหนรับของได้แล้ว</p>
+    </div>
+    <button class="btn btn-primary" id="btnNew">📝 เบิกของ</button>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true"  data-t="list">ใบเบิกของฉัน</button>
+    <button role="tab" aria-selected="false" data-t="held">ของที่ถืออยู่<span class="n" id="nHeld" hidden></span></button>
+  </div>
+
+  <section id="pane-list"><div id="rqs"></div></section>
+  <section id="pane-held" hidden><div class="held" id="heldBox"></div></section>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+$('#topbar').innerHTML = topbarHTML();
+
+let ITEMS = [], CART = [], EDITING = null, STEP = 1;
+
+/* ---------- แท็บ ---------- */
+function showTab(name) {
+  for (const x of $$('.tabs button')) x.setAttribute('aria-selected', String(x.dataset.t === name));
+  $('#pane-list').hidden = name !== 'list';
+  $('#pane-held').hidden = name !== 'held';
+}
+for (const b of $$('.tabs button')) b.onclick = () => showTab(b.dataset.t);
+
+/* ---------- รายการใบเบิก ---------- */
+// บอกให้ชัดว่าตอนนี้ต้องทำอะไรต่อ — พนักงานไม่ควรต้องเดาความหมายของสถานะเอง
+const NEXT_STEP = {
+  draft:    'ยังไม่ได้ส่ง — เปิดเพื่อแก้ไขแล้วกดส่ง',
+  pending:  'เดินไปรับของได้เลย',
+  partial:  'ได้ไม่ครบ — ส่วนที่ขาดต้องเปิดใบใหม่',
+};
+// ไอคอนประจำขั้นต่อไป — ช่วยให้กวาดตาเห็นก่อนอ่านข้อความ (ใช้ในกล่องรายละเอียดใบ)
+const NEXT_ICON = { draft:'✏️', pending:'🚶', partial:'⚠️' };
+
+function drawList(rows) {
+  const box = $('#rqs'); box.innerHTML = '';
+  if (!rows.length) {
+    box.appendChild(emptyBox('📝', 'ยังไม่เคยเบิกของ',
+      'กดปุ่ม “เบิกของ” ด้านบน เลือกของที่ต้องการ แล้วเดินไปรับที่คลังได้เลย'));
+    return;
+  }
+  for (const r of rows) {
+    const st = REQ_STATUS[r.status] || { t:r.status, c:'mute' };
+    const card = document.createElement('button');
+    card.className = 'rq';
+    card.onclick = () => openReq(r.id);
+
+    const top = document.createElement('div'); top.className = 'top';
+    const no = document.createElement('span'); no.className = 'no';
+    no.textContent = r.no || '(ร่าง)';
+    const when = document.createElement('span'); when.className = 'when';
+    when.textContent = r.status === 'draft' ? dt(r.createdAt) : dt(r.submittedAt);
+    top.append(no, pill(st.t, st.c), when);
+
+    const sum = document.createElement('div'); sum.className = 'sum';
+    sum.textContent = r.purpose || 'ไม่ได้ระบุเหตุผล';
+    if (r.totalCost > 0) {
+      const b = document.createElement('b'); b.textContent = ' · ' + money(r.totalCost);
+      sum.appendChild(b);
+    }
+    card.append(top, sum);
+    if (NEXT_STEP[r.status]) {
+      const n = document.createElement('span'); n.className = 'next';
+      n.textContent = '→ ' + NEXT_STEP[r.status];
+      card.appendChild(n);
+    }
+    box.appendChild(card);
+  }
+}
+
+/* ---------- ตัวเลือกของ ---------- */
+function inCart(id) { return CART.find((c) => c.itemId === id); }
+
+function stepper(entry, onZero) {
+  const w = document.createElement('div'); w.className = 'step';
+  // เพดาน = ยอดคงเหลือของชิ้นนั้น · ถ้าเปิดร่างเก่าที่ไม่มีค่านี้ ให้ไปดูจากรายการสินค้าที่โหลดไว้
+  const src = ITEMS.find((i) => i.id === entry.itemId);
+  const max = Number(entry.available != null ? entry.available : (src ? src.available : 0)) || 0;
+
+  const minus = document.createElement('button');
+  minus.type = 'button'; minus.textContent = '−';
+  minus.setAttribute('aria-label', 'ลดจำนวน ' + entry.name);
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.inputMode = 'decimal'; inp.value = entry.qty;
+  inp.setAttribute('aria-label', 'จำนวน ' + entry.name);
+  const plus = document.createElement('button');
+  plus.type = 'button'; plus.textContent = '+';
+  plus.setAttribute('aria-label', 'เพิ่มจำนวน ' + entry.name);
+
+  // บอกเพดานให้เห็นตรงนั้นเลย ไม่ใช่ปล่อยให้กด + แล้วเงียบ ๆ ไม่ขยับ
+  const cap = document.createElement('span');
+  cap.className = 'cap';
+
+  const paintCap = () => {
+    const atMax = Number(entry.qty) >= max;
+    plus.disabled = atMax;
+    plus.setAttribute('aria-disabled', atMax ? 'true' : 'false');
+    cap.textContent = atMax ? 'เท่าที่มีในคลัง (' + num(max) + ')' : 'มีอยู่ ' + num(max);
+    cap.classList.toggle('full', atMax);
+  };
+
+  const set = (v) => {
+    const q = Math.min(Math.max(0, v), max);   // ห้ามเกินยอดคงเหลือ
+    entry.qty = q;
+    inp.value = q;
+    if (q <= 0) { CART = CART.filter((c) => c !== entry); onZero && onZero(); return; }
+    paintCap();
+    paintCount();
+  };
+  minus.onclick = (e) => { e.stopPropagation(); set(Number(entry.qty) - 1); };
+  plus.onclick = (e) => {
+    e.stopPropagation();
+    if (Number(entry.qty) >= max) { toast('มีอยู่ ' + num(max) + ' ' + entry.unit + ' เบิกได้ไม่เกินนี้', 'warn'); return; }
+    set(Number(entry.qty) + 1);
+  };
+  inp.onclick = (e) => e.stopPropagation();
+  inp.oninput = () => { entry.qty = inp.value; paintCount(); };
+  // พิมพ์เกินยอดคงเหลือ = ดึงกลับมาที่เพดานตอนออกจากช่อง (ไม่ดึงระหว่างพิมพ์ เดี๋ยวเลขกระโดด)
+  inp.onblur = () => {
+    const v = Number(inp.value);
+    if (!(v > 0)) return set(0);
+    if (v > max) { toast('มีอยู่ ' + num(max) + ' ' + entry.unit + ' ปรับให้เท่าที่มีแล้ว', 'warn'); }
+    set(v);
+  };
+  w.append(minus, inp, plus);
+  paintCap();
+  w.appendChild(cap);
+  return w;
+}
+
+// ⚠️ รับ container มาตรง ๆ ไม่ query จาก document
+//    เพราะตอน render ครั้งแรก กล่องยังไม่ถูกใส่เข้าหน้า — $('#plist') จะหาไม่เจอแล้วรายการว่างเปล่า
+let PLIST = null;
+function drawPickList(q) {
+  const box = PLIST; if (!box) return;
+  box.innerHTML = '';
+  const list = ITEMS.filter((i) => !q ||
+    (i.name + ' ' + i.code + ' ' + (i.category || '')).toLowerCase().includes(q.toLowerCase()));
+  if (!list.length) {
+    // แยกให้ชัดระหว่าง "หาไม่เจอ" กับ "คลังยังไม่ได้คีย์ของเข้าระบบเลย"
+    // วันแรกที่เปิดใช้ ระบบยังไม่มีสินค้าสักชิ้น ถ้าบอกว่า "ไม่พบของที่ค้นหา" พนักงานจะนึกว่าตัวเองพิมพ์ผิด
+    const p = ITEMS.length
+      ? emptyBox('🔍', 'ไม่พบของที่ค้นหา', 'ลองพิมพ์คำสั้นลง เช่น “ปากกา” แทน “ปากกาลูกลื่นสีน้ำเงิน”')
+      : emptyBox('📦', 'คลังยังไม่ได้ลงรายการของในระบบ', 'ติดต่อผู้ดูแลคลังให้เพิ่มรายการก่อน แล้วค่อยกลับมาเบิก');
+    box.appendChild(p); return;
+  }
+  for (const it of list) {
+    const row = document.createElement('div');
+    row.className = 'prow' + (inCart(it.id) ? ' picked' : '');
+
+    // ภาพย่อมาก่อนชื่อ — พนักงานหน้างานจำหน้าตาของได้แม่นกว่าชื่อในระบบ
+    const th = document.createElement('span'); th.className = 'ithumb';
+    th.textContent = '📦';
+    const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.appendChild(im);
+    if (it.hasImage) setItemImg(im, it.id).then(() => { if (!im.hidden) th.firstChild.textContent = ''; });
+    row.appendChild(th);
+
+    const info = document.createElement('div'); info.className = 'info';
+    const nm = document.createElement('b'); nm.textContent = it.name;
+    const sm = document.createElement('small');
+    sm.textContent = [it.category || 'ไม่ระบุหมวดหมู่', KIND_LABEL[it.kind]].join(' · ');
+    info.append(nm, sm);
+    row.appendChild(info);
+
+    const entry = inCart(it.id);
+    const soldOut = it.available <= 0;
+    if (entry) {
+      row.appendChild(stepper(entry, () => drawPickList($('#pq').value.trim())));
+    } else {
+      const st = document.createElement('span');
+      st.className = 'stock' + (soldOut ? ' out' : '');
+      st.textContent = soldOut ? 'หมด · เบิกไม่ได้' : num(it.available) + ' ' + it.unit;
+      row.appendChild(st);
+      if (soldOut) {
+        // ของหมดกดเบิกไม่ได้ — ทำให้การ์ดจางและกดไม่ติด ไม่ใช่ปล่อยให้กดแล้วค่อยไปเด้ง error ตอนส่ง
+        // (เซิร์ฟเวอร์กันไว้อีกชั้นตอนกดส่ง เผื่อของหมดหลังจากเปิดหน้าค้างไว้)
+        row.classList.add('soldout');
+        row.setAttribute('aria-disabled', 'true');
+      } else {
+        row.onclick = () => {
+          CART.push({ itemId: it.id, name: it.name, unit: it.unit, kind: it.kind, available: it.available, qty: 1 });
+          drawPickList($('#pq').value.trim());
+          paintCount();   // ตัวนับท้ายจอต้องขยับทันที ไม่งั้นกดแล้วเหมือนไม่มีอะไรเกิดขึ้น
+        };
+        row.tabIndex = 0;
+        row.setAttribute('role', 'button');
+        row.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); row.onclick(); } };
+      }
+    }
+    box.appendChild(row);
+  }
+}
+
+function paintCount() {
+  const el = $('#cartCount');
+  if (!el) return;
+  const n = CART.length;
+  el.innerHTML = '';
+  if (!n) { el.textContent = 'ยังไม่ได้เลือกของ'; return; }
+  const b = document.createElement('b'); b.textContent = n + ' รายการ';
+  el.append('เลือกแล้ว ', b);
+}
+
+/* ---------- ฟอร์มเปิดใบเบิก (2 ขั้น) ---------- */
+async function openForm(draft) {
+  EDITING = draft || null;
+  STEP = 1;
+  CART = draft ? draft.lines.map((l) => ({
+    itemId: l.itemId, name: l.name, unit: l.unit, kind: l.kind, available: l.available, qty: l.qtyRequested,
+  })) : [];
+
+  const box = document.createElement('div');
+  // ⚠️ ต้องประกาศก่อนบรรทัดที่เรียก render() — `let` มี temporal dead zone
+  //    ถ้าไปประกาศไว้ใต้ตัวฟังก์ชัน (ซึ่ง hoist ขึ้นมาได้) จะพังทั้งหน้าเป็น
+  //    "Cannot access 'DONE' before initialization" แล้วกล่องเบิกของไม่เปิดเลย (เจอมาแล้ว)
+  let DONE = null;   // { no } เมื่อส่งสำเร็จ — ค้างหน้ายืนยันไว้แทนที่จะปิดกล่องทิ้ง
+  render();
+
+  function render() {
+    box.innerHTML = '';
+    if (DONE) {
+      // เดิมกดส่งแล้วกล่องปิดทันที เหลือแค่ toast 4 วินาที — เลขที่ใบวิ่งผ่านไปเฉย ๆ
+      // คนที่ใช้เดือนละครั้งไม่ทันอ่าน และไม่รู้ว่าต้องทำอะไรต่อ จึงค้างหน้ายืนยันไว้ให้อ่านจบเอง
+      const ok = document.createElement('div');
+      ok.className = 'sent';
+      ok.innerHTML =
+        '<span class="ic">✅</span>' +
+        '<b>ส่งให้คลังแล้ว</b>' +
+        '<span class="no"></span>' +
+        '<span class="hint">รอสถานะเปลี่ยนเป็น <b>“รับของแล้ว”</b> แล้วเดินไปรับที่คลังได้เลย<br>' +
+        'ดูสถานะได้ที่หน้า “ใบเบิกของฉัน” หรือกระดิ่งแจ้งเตือน</span>';
+      $('.no', ok).textContent = DONE.no ? 'เลขที่ ' + DONE.no : '';
+      box.appendChild(ok);
+      return;
+    }
+    if (STEP === 1) {
+      const s = document.createElement('div'); s.className = 'picksearch';
+      const lb = document.createElement('label'); lb.className = 'fld'; lb.style.margin = '0';
+      lb.innerHTML = '<span>ค้นหาของที่ต้องการเบิก</span>';
+      const inp = document.createElement('input');
+      inp.type = 'search'; inp.id = 'pq'; inp.placeholder = 'พิมพ์ชื่อของ เช่น ปากกา กระดาษ';
+      inp.oninput = () => drawPickList(inp.value.trim());
+      lb.appendChild(inp); s.appendChild(lb);
+      const list = document.createElement('div'); list.className = 'plist'; list.id = 'plist';
+      box.append(s, list);
+      PLIST = list;
+      drawPickList('');
+    } else {
+      const h = document.createElement('p'); h.className = 'picked-head'; h.textContent = 'ของที่จะเบิก';
+      box.appendChild(h);
+      const list = document.createElement('div'); list.className = 'plist cartlist';
+      for (const c of CART) {
+        const row = document.createElement('div'); row.className = 'prow picked';
+        // ภาพย่อจากรายการสินค้าที่โหลดไว้แล้ว (CART เก็บแค่ id/ชื่อ/จำนวน)
+        const src = ITEMS.find((i) => i.id === c.itemId);
+        const th = document.createElement('span'); th.className = 'ithumb'; th.textContent = '📦';
+        const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.appendChild(im);
+        if (src && src.hasImage) setItemImg(im, c.itemId).then(() => { if (!im.hidden) th.firstChild.textContent = ''; });
+        const info = document.createElement('div'); info.className = 'info';
+        const nm = document.createElement('b'); nm.textContent = c.name;
+        const sm = document.createElement('small'); sm.textContent = 'หน่วย: ' + c.unit;
+        info.append(nm, sm);
+        row.append(th, info, stepper(c, () => { if (!CART.length) { STEP = 1; } render(); paintFoot(); }));
+        list.appendChild(row);
+      }
+      box.appendChild(list);
+
+      const f1 = document.createElement('label'); f1.className = 'fld'; f1.style.marginTop = '18px';
+      f1.innerHTML = '<span>เอาไปทำอะไร</span>';
+      const p1 = document.createElement('input');
+      p1.type = 'text'; p1.id = 'fpurpose'; p1.placeholder = 'เช่น ใช้ในงานประชุมประจำเดือน';
+      p1.value = (EDITING && EDITING.purpose) || PURPOSE;
+      p1.oninput = () => { PURPOSE = p1.value; };
+      f1.appendChild(p1);
+
+      const f2 = document.createElement('label'); f2.className = 'fld';
+      f2.innerHTML = '<span>อยากได้ภายในวันที่ (ไม่บังคับ)</span>';
+      const p2 = document.createElement('input');
+      p2.type = 'date'; p2.id = 'fneed'; p2.value = NEEDBY;
+      p2.onchange = () => { NEEDBY = p2.value; };
+      f2.appendChild(p2);
+      box.append(f1, f2);
+    }
+    paintCount();
+  }
+
+  let PURPOSE = (draft && draft.purpose) || '';
+  let NEEDBY = draft ? msToDate(draft.needBy) : '';
+
+  function paintFoot() {
+    const foot = $('#mFoot'); if (!foot) return;
+    foot.innerHTML = '';
+    if (DONE) {
+      foot.appendChild(mkBtn('เบิกอีกใบ', 'btn-ghost', () => {
+        DONE = null; CART = []; PURPOSE = ''; NEEDBY = ''; EDITING = null; STEP = 1; render(); paintFoot();
+      }));
+      foot.appendChild(mkBtn('เสร็จแล้ว', 'btn-primary', closeModal));
+      return;
+    }
+    const count = document.createElement('span'); count.className = 'cartcount'; count.id = 'cartCount';
+    foot.appendChild(count);
+    if (STEP === 1) {
+      foot.appendChild(mkBtn('ปิด', 'btn-ghost', closeModal));
+      foot.appendChild(mkBtn('ถัดไป ›', 'btn-primary', () => {
+        if (!CART.length) return showErr(box, 'กรุณาเลือกของที่ต้องการเบิกอย่างน้อย 1 รายการ');
+        STEP = 2; render(); paintFoot();
+      }));
+    } else {
+      foot.appendChild(mkBtn('‹ ย้อนกลับ', 'btn-ghost', () => { STEP = 1; render(); paintFoot(); }));
+      // เก็บไว้ก่อนได้ — คนหน้างานมักถูกเรียกกลางคัน ถ้าไม่มีปุ่มนี้ของที่เลือกไว้จะหายหมด
+      foot.appendChild(mkBtn('เก็บไว้ก่อน', 'btn-ghost', () => save(false)));
+      foot.appendChild(mkBtn('ส่งให้คลัง', 'btn-primary', () => save(true)));
+    }
+    paintCount();
+  }
+  function mkBtn(label, cls, fn) {
+    const b = document.createElement('button');
+    b.className = 'btn ' + cls; b.textContent = label;
+    b.onclick = lockWhileBusy(b, fn);   // กดส่งรัว ๆ ไม่ให้ยิงซ้ำ
+    return b;
+  }
+
+  async function save(submit) {
+    const lines = CART.map((c) => ({ itemId: c.itemId, qty: c.qty }));
+    if (!lines.length) return showErr(box, 'กรุณาเลือกของที่ต้องการเบิกอย่างน้อย 1 รายการ');
+    if (lines.some((l) => !(Number(l.qty) > 0))) return showErr(box, 'จำนวนของทุกรายการต้องมากกว่า 0');
+    const body = { purpose: PURPOSE.trim(), needBy: dateToMs(NEEDBY), lines, submit };
+    try {
+      let no = EDITING && EDITING.no;
+      if (EDITING) {
+        await api('/api/requisitions/' + EDITING.id, { method:'PUT', body: JSON.stringify(body) });
+        if (submit) no = (await api('/api/requisitions/' + EDITING.id + '/submit', { method:'POST' })).no;
+      } else {
+        const out = await api('/api/requisitions', { method:'POST', body: JSON.stringify(body) });
+        no = out.no;
+      }
+      await load();
+      if (submit) { DONE = { no }; render(); paintFoot(); }
+      else { closeModal(); toast('เก็บไว้ให้แล้ว — เปิดที่ “ใบเบิกของฉัน” เพื่อทำต่อ', 'ok'); }
+    } catch (e) { showErr(box, e.message); }
+  }
+
+  // sticky: กดพื้นหลังหรือ Esc ไม่ปิด — ของที่เลือกไว้ทั้งใบจะได้ไม่หายเพราะเผลอกดนอกกล่อง
+  openModal(draft ? 'แก้ไขใบเบิก' : 'เบิกของ', box, [], { wide:true, sticky:true });
+  $('#modal').classList.add('sheet');
+  paintFoot();
+}
+$('#btnNew').onclick = () => openForm(null);
+
+/* ---------- รายละเอียดใบเบิก ---------- */
+async function openReq(id) {
+  let d;
+  try { d = (await api('/api/requisitions/' + id)).requisition; }
+  catch (e) { return toast(e.message, 'bad'); }
+
+  const st = REQ_STATUS[d.status] || { t:d.status, c:'mute' };
+  const box = document.createElement('div');
+
+  // แถบบนสุด: สถานะ + วันที่ อยู่บรรทัดเดียว — เดิมสถานะเป็นแถวหนึ่งในตารางข้อมูล
+  // ทั้งที่เป็นสิ่งแรกที่คนเปิดใบอยากรู้ จึงยกขึ้นมาเป็นหัวเรื่องของเนื้อหา
+  const top = document.createElement('div'); top.className = 'rq-top';
+  top.appendChild(pill(st.t, st.c));
+  const when = document.createElement('span'); when.className = 'when';
+  when.textContent = (d.status === 'draft' ? 'บันทึกเมื่อ ' : 'ส่งเมื่อ ')
+    + dt(d.status === 'draft' ? d.createdAt : d.submittedAt);
+  top.appendChild(when);
+  box.appendChild(top);
+
+  if (NEXT_STEP[d.status]) {
+    const n = document.createElement('div');
+    n.className = 'callout warn nextstep';
+    const ic = document.createElement('span'); ic.className = 'ic';
+    ic.textContent = NEXT_ICON[d.status] || '👉';
+    const tx = document.createElement('div'); tx.className = 'tx';
+    const lb = document.createElement('b'); lb.textContent = 'ขั้นต่อไป';
+    const ac = document.createElement('span'); ac.className = 'act'; ac.textContent = NEXT_STEP[d.status];
+    tx.append(lb, ac);
+    n.append(ic, tx);
+    box.appendChild(n);
+  }
+
+  // เอาเฉพาะช่องที่มีค่าจริง — ของเดิมโชว์ "—" ทุกช่องที่ว่าง ได้ตารางเต็มไปด้วยขีด
+  const pairs = [];
+  if (d.purpose) pairs.push(['เหตุผลที่เบิก', d.purpose]);
+  if (d.needBy) pairs.push(['อยากได้ภายใน', dOnly(d.needBy)]);
+  if (d.totalCost > 0) pairs.push(['มูลค่าที่รับไป', money(d.totalCost)]);
+  if (pairs.length) {
+    const kv = document.createElement('dl'); kv.className = 'kv';
+    for (const [k, v] of pairs) {
+      const a = document.createElement('dt'); a.textContent = k;
+      const b = document.createElement('dd'); b.textContent = v;
+      kv.append(a, b);
+    }
+    box.appendChild(kv);
+  }
+
+  const h = document.createElement('div'); h.className = 'sub-h';
+  h.textContent = 'รายการของ';
+  const cnt = document.createElement('span'); cnt.className = 'cnt';
+  cnt.textContent = d.lines.length + ' รายการ';
+  h.appendChild(cnt);
+  box.appendChild(h);
+
+  // รายการเป็นแถวในกล่องเดียว ไม่ใช่ตาราง 3 คอลัมน์ — ใบส่วนใหญ่มี 1-3 รายการ
+  // ตารางจะเหลือช่องว่างกลางจอเยอะจนอ่านยากกว่าเดิม
+  const lines = document.createElement('div'); lines.className = 'lines';
+  const waiting = d.status === 'pending' || d.status === 'draft';
+  for (const l of d.lines) {
+    const row = document.createElement('div'); row.className = 'line';
+    const lx = document.createElement('div'); lx.className = 'lx';
+    const nm = document.createElement('b'); nm.textContent = l.name;
+    lx.appendChild(nm);
+    if (l.issuedTags.length) {
+      const s = document.createElement('small');
+      s.textContent = 'เลขครุภัณฑ์ ' + l.issuedTags.join(', ');
+      lx.appendChild(s);
+    }
+    const lq = document.createElement('div'); lq.className = 'lq';
+    const want = document.createElement('span'); want.className = 'want';
+    want.textContent = 'ขอ ' + num(l.qtyRequested) + ' ' + l.unit;
+    const got = document.createElement('span'); got.className = 'got';
+    if (waiting) { got.classList.add('wait'); got.textContent = 'รอรับของ'; }
+    else if (l.qtyIssued > 0) { got.classList.add('ok'); got.textContent = 'ได้รับ ' + num(l.qtyIssued) + ' ' + l.unit; }
+    else { got.classList.add('none'); got.textContent = 'ไม่ได้รับ'; }
+    lq.append(want, got);
+    row.append(lx, lq);
+    lines.appendChild(row);
+  }
+  box.appendChild(lines);
+
+  if (d.approvals.length) {
+    const h2 = document.createElement('div'); h2.className = 'sub-h'; h2.textContent = 'คลังว่าอย่างไร';
+    box.appendChild(h2);
+    for (const a of d.approvals) {
+      const ok = a.decision === 'approve';
+      const p = document.createElement('div'); p.className = 'note-line' + (ok ? '' : ' bad');
+      const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = ok ? '✅' : '🚫';
+      const tx = document.createElement('div');
+      const b = document.createElement('b');
+      b.textContent = (ok ? 'จ่ายของแล้ว' : 'ปฏิเสธ') + ' โดย ' + a.approver;
+      const s = document.createElement('small'); s.textContent = dt(a.decidedAt);
+      tx.append(b, s);
+      if (a.comment) { const c = document.createElement('span'); c.className = 'cm'; c.textContent = a.comment; tx.appendChild(c); }
+      p.append(ic, tx);
+      box.appendChild(p);
+    }
+  }
+
+  const buttons = [{ label:'ปิด', onClick: closeModal }];
+  if (d.status === 'draft') {
+    buttons.push({ label:'ลบทิ้ง', danger:true, onClick: async () => {
+      try { await api('/api/requisitions/' + d.id, { method:'DELETE' }); closeModal(); toast('ลบแล้ว', 'ok'); await load(); }
+      catch (e) { toast(e.message, 'bad'); } } });
+    buttons.push({ label:'แก้ไข / ส่ง', primary:true, onClick: () => { closeModal(); openForm(d); } });
+  } else if (d.status === 'pending') {
+    buttons.push({ label:'ยกเลิกใบนี้', danger:true, onClick: async () => {
+      try { await api('/api/requisitions/' + d.id + '/cancel', { method:'POST' }); closeModal(); toast('ยกเลิกแล้ว', 'ok'); await load(); }
+      catch (e) { toast(e.message, 'bad'); } } });
+  }
+  // ไม่ใช้โหมดกว้าง — ใบเบิกส่วนใหญ่มี 1-3 รายการ กล่อง 880px ทำให้เนื้อหากระจายจนดูโล่ง
+  openModal('ใบเบิก ' + (d.no || '(ร่าง)'), box, buttons);
+}
+
+/* ---------- ของที่ถืออยู่ ---------- */
+function drawHeld(tags) {
+  const box = $('#heldBox'); box.innerHTML = '';
+  $('#nHeld').hidden = tags.length === 0;
+  $('#nHeld').textContent = tags.length;
+  if (!tags.length) {
+    box.appendChild(emptyBox('🔧', 'ไม่ได้ถือครุภัณฑ์ชิ้นไหนอยู่',
+      'ของที่ต้องคืน เช่น โน้ตบุ๊กหรือเครื่องมือ จะขึ้นที่นี่'));
+    return;
+  }
+  for (const t of tags) {
+    const c = document.createElement('div');
+    c.className = 'card' + (t.overdue ? ' over' : '');
+    const tx = document.createElement('div'); tx.className = 'tx';
+    const b = document.createElement('b'); b.textContent = t.item;
+    const s = document.createElement('small');
+    s.textContent = 'เลขครุภัณฑ์ ' + t.tagNo + ' · รับไปเมื่อ ' + dOnly(t.issuedAt);
+    tx.append(b, s);
+    const due = document.createElement('div');
+    due.className = 'due' + (t.overdue ? ' over' : '');
+    due.textContent = !t.dueAt ? 'ไม่มีกำหนดคืน' : (t.overdue ? 'เลยกำหนด ' : 'คืนภายใน ') + dOnly(t.dueAt);
+    c.append(tx, due);
+    box.appendChild(c);
+  }
+}
+
+/* ---------- โหลด ---------- */
+async function load() {
+  const [rq, held, cat] = await Promise.all([
+    api('/api/requisitions?box=mine'), api('/api/assets/mine'), api('/api/catalog/items'),
+  ]);
+  ITEMS = cat.items.filter((i) => i.active);
+  drawList(rq.requisitions);
+  drawHeld(held.tags);
+}
+
+(async () => {
+  try {
+    await initTopbar('request.html');
+    await load();
+    const p = new URLSearchParams(location.search);
+    if (location.hash === '#held') showTab('held');
+    if (p.get('new') === '1') openForm(null);
+    else if (p.get('doc')) openReq(p.get('doc'));
+  } catch (e) {
+    const box = $('#rqs');
+    if (box) { box.innerHTML = ''; box.appendChild(errorBox(e.message, () => location.reload())); }
+    toast(e.message, 'bad');
+  }
+})();
+</script>
+</body>
+</html>

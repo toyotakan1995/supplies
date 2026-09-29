@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>หน้าหลัก · ระบบเบิกอุปกรณ์</title>
+<link rel="icon" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+  /* คำทักทาย — มีวงกลมตัวอักษรแรกของชื่อนำหน้า ให้หน้าแรกดูเป็น "ของเรา" ไม่ใช่หน้าระบบเปล่า ๆ
+     🔑 ใช้โทนชาร์โคล ไม่ใช้แดงแบรนด์ เพราะแดงถูกจองไว้ให้ปุ่ม "เบิกของ" ซึ่งต้องเด่นที่สุดในหน้า */
+  .hello{display:flex; align-items:center; gap:14px; margin-bottom:20px}
+  .hello .av{
+    flex:0 0 auto; width:52px; height:52px; border-radius:50%;
+    background:linear-gradient(140deg,#3a3d45,#23252b); color:#fff;
+    font-family:var(--font-head); font-size:22px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; user-select:none;
+    box-shadow:0 6px 16px -8px rgba(0,0,0,.6);
+  }
+  .hello .who{min-width:0}
+  .hello h1{font-size:clamp(21px,4.6vw,25px); font-weight:700; margin:0; letter-spacing:-.01em; line-height:1.3}
+  .hello p{color:var(--muted); font-size:14.5px; margin:3px 0 0}
+
+  /* ปุ่มหลัก — สิ่งเดียวที่พนักงานส่วนใหญ่ต้องกด */
+  .hero{
+    display:flex; align-items:center; gap:16px; width:100%;
+    /* แสงนุ่ม ๆ ทับบนไล่สีแดงให้มีมิติ — วางไว้ "มุมบนขวา" ซึ่งมีแต่ลูกศร ไม่ใช่มุมซ้ายที่มีตัวหนังสือ
+       🔑 วัดแล้ว: ขาวบนแดงแบรนด์ = 4.80 ผ่านเกณฑ์ · แต่ถ้ามีแสงขาวทับ 22% เหลือ 4.02 ตกเกณฑ์ทันที
+       ดังนั้นแสงต้องไม่พาดผ่านข้อความ และคุมความเข้มไว้ที่ .14 */
+    background:
+      radial-gradient(90% 150% at 96% -40%, rgba(255,255,255,.14), transparent 55%),
+      linear-gradient(100deg,var(--brand),var(--brand-700));
+    color:#fff; border:0; border-radius:16px; padding:20px 22px; cursor:pointer;
+    text-align:start; text-decoration:none; font:inherit;
+    box-shadow:0 2px 6px rgba(230,0,18,.22), 0 16px 34px -18px rgba(230,0,18,.95);
+    transition:transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease;
+  }
+  .hero:hover{transform:translateY(-2px); box-shadow:0 16px 34px -14px rgba(230,0,18,.95)}
+  .hero:active{transform:translateY(0)}
+  /* ไอคอนมีแผ่นรองโปร่งแสง — อ่านเป็น "ปุ่ม" ชัดขึ้นและไม่ลอยอยู่บนพื้นแดงเฉย ๆ */
+  .hero .ic{
+    font-size:30px; line-height:1; flex:0 0 auto;
+    width:56px; height:56px; border-radius:15px;
+    background:rgba(255,255,255,.16); box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .hero .t{flex:1; min-width:0}
+  .hero .t b{display:block; font-size:19px; font-weight:700}
+  /* .85 วัดได้ 4.45 ตกเกณฑ์ 4.5 บนพื้นแดงแบรนด์ — ต้อง .94 ขึ้นไป */
+  .hero .t span{display:block; font-size:14.5px; color:rgba(255,255,255,.94); margin-top:2px}
+  .hero .go{font-size:22px; opacity:.9}
+
+  /* แถวตัวเลขสรุป — เปิดหน้ามาต้องรู้สถานะของตัวเองทันทีโดยไม่ต้องกดเข้าไปหน้าไหน
+     โชว์เสมอแม้เป็น 0 เพราะ "ไม่มีใบค้าง" ก็เป็นคำตอบที่คนอยากรู้ */
+  .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(164px,1fr)); gap:10px; margin-top:16px}
+  .tile{
+    display:flex; align-items:center; gap:12px; min-height:84px;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:13px 15px; text-decoration:none; color:inherit; box-shadow:var(--shadow);
+    transition:transform .16s var(--ease), box-shadow .2s ease, border-color .18s ease;
+  }
+  @media (hover:hover){ a.tile:hover{transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:var(--line-strong)} }
+  /* ไอคอนในแผ่นรอง — ชุดเดียวกับการ์ด "ต้องทำตอนนี้" ให้หน้าเดียวกันใช้ภาษาภาพเดียวกัน */
+  .tile .ic{
+    flex:0 0 auto; width:42px; height:42px; border-radius:12px; font-size:20px; line-height:1;
+    background:var(--panel-2); display:flex; align-items:center; justify-content:center;
+  }
+  .tile .tx{min-width:0}
+  .tile .k{display:block; font-size:12.5px; color:var(--muted); line-height:1.35}
+  .tile .v{
+    font-family:var(--font-head); font-size:25px; font-weight:700; line-height:1.2;
+    font-variant-numeric:tabular-nums; display:flex; align-items:baseline; gap:5px; margin-top:1px;
+  }
+  .tile .v small{font-family:var(--font); font-size:12.5px; font-weight:400; color:var(--muted)}
+  /* มีอะไรต้องจัดการ = พื้นเตือน (กติกาเดียวกับการ์ดในหน้ารายงาน) */
+  .tile.attn{background:var(--warn-bg); border-color:#eddcb8}
+  .tile.attn .v{color:#7a4f04}
+  .tile.attn .k{color:#8a6a2a}
+  .tile.attn .ic{background:rgba(138,90,5,.13)}
+  /* ยอดเป็น 0 = ไม่มีอะไรค้าง · ทำให้เงียบลง สายตาจะได้ไปหยุดที่ตัวเลขที่ต้องจัดการจริง ๆ
+     (ยังต้องแสดงอยู่ เพราะ "ไม่มีใบค้าง" ก็เป็นคำตอบที่คนเปิดหน้าอยากรู้) */
+  .tile.zero .v{color:var(--muted)}
+  .tile.zero .ic{opacity:.55}
+
+  .sec{margin-top:30px}
+  .sec > h2{
+    /* ไม่ยืดช่องไฟ — สระบน/ล่างของไทยจะหลุดจากพยัญชนะจนอ่านสะดุด */
+    font-size:13.5px; font-weight:700; color:var(--ink-soft);
+    display:flex; align-items:center; gap:10px; margin:0 0 12px;
+  }
+  .sec > h2::after{content:""; flex:1; height:1px; background:var(--line)}
+  .sec > h2 a{
+    margin-inline-start:auto; font-size:12.5px; font-weight:400; color:var(--muted);
+    padding:12px 4px 12px 12px; margin-block:-12px;   /* เป้ากดสูงพอสำหรับนิ้ว โดยไม่ดันแถวให้สูงขึ้น */
+  }
+
+  /* งานที่ต้องทำ — บอกสถานะจริง ไม่ใช่แค่ลิงก์ */
+  .todo{display:grid; grid-template-columns:minmax(0,1fr); gap:10px}
+  .todo a{
+    display:flex; align-items:center; gap:14px; text-decoration:none; color:inherit;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; box-shadow:var(--shadow); min-height:60px;
+  }
+  .todo a:hover{background:var(--panel-2)}
+  .todo .ic{
+    flex:0 0 auto; width:42px; height:42px; border-radius:12px; font-size:20px; line-height:1;
+    background:rgba(255,255,255,.7); display:flex; align-items:center; justify-content:center;
+  }
+  .todo .tx{flex:1; min-width:0}
+  .todo .tx b{display:block; font-size:15.5px; font-weight:700}
+  .todo .tx span{display:block; font-size:13.5px; color:var(--muted); margin-top:1px}
+  .todo .go{color:var(--muted); font-size:18px}
+  .todo a.warn{background:var(--warn-bg); border-color:#eddcb8}
+  .todo a.warn .tx b{color:#7a4f04}
+  .todo a.bad{background:var(--bad-bg); border-color:#f3c9c5}
+  .todo a.bad .tx b{color:var(--bad)}
+
+  /* ใบเบิกล่าสุดของฉัน — ซ้าย: เลขที่ + เหตุผล · ขวา: สถานะ + ลูกศร
+     (เดิมใช้ flex-wrap + order สลับตำแหน่ง อ่านโครงยาก และป้ายสถานะไปกองรวมกับเลขที่บนจอแคบ) */
+  /* 🔑 ต้องเป็น minmax(0,1fr) ไม่ใช่ grid เปล่า ๆ — คอลัมน์แบบ auto จะกว้างตาม max-content
+     ของแถว (เหตุผลที่เบิกเป็น nowrap+ellipsis จึงยาวได้ไม่จำกัด) แล้วดันหน้าเลื่อนแนวนอน
+     ellipsis ที่ตั้งไว้จะไม่ทำงานเลยเพราะกล่องกว้างตามข้อความ (วัดเจอ: แถวกว้าง 586px ในจอ 375px) */
+  .mine{display:grid; grid-template-columns:minmax(0,1fr); gap:8px}
+  .mine a{
+    display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; min-height:58px; box-shadow:var(--shadow);
+    transition:transform .16s var(--ease), box-shadow .2s ease, border-color .18s ease;
+  }
+  @media (hover:hover){ .mine a:hover{transform:translateY(-1px); box-shadow:var(--shadow-lift); border-color:var(--line-strong)} }
+  .mine .tx{flex:1; min-width:0}
+  .mine .no{display:block; font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:13.5px}
+  .mine .dsc{
+    display:block; font-size:13.5px; color:var(--muted); margin-top:2px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .mine .rt{flex:0 0 auto; display:flex; align-items:center; gap:9px}
+  .mine .go{color:var(--muted); font-size:18px; line-height:1}
+
+
+  /* เมนูอื่น ๆ — ทุกอันมีอยู่แล้วในแถบเมนูด้านบน (และแถบล่างบนมือถือ)
+     เดิมทำเป็นการ์ด 7 ใบเท่ากันหมด กินพื้นที่ครึ่งหน้าโดยไม่ได้บอกอะไรใหม่
+     ลดเหลือลิงก์ข้อความเรียงกัน — ยังหาเจอ แต่ไม่แย่งสายตาปุ่ม "เบิกของ" */
+  .more{display:flex; flex-wrap:wrap; gap:8px 18px}
+  .more a{
+    display:inline-flex; align-items:center; gap:7px; text-decoration:none; color:var(--ink-soft);
+    font-size:14.5px; min-height:44px; padding:0 2px; border-bottom:1px solid transparent;
+  }
+  .more a:hover{color:var(--brand-700); border-bottom-color:var(--brand)}
+  .more a:focus-visible{outline:none; box-shadow:var(--ring); border-radius:8px}
+  .more .ic{font-size:16px}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar"></header>
+
+<main class="page narrow">
+  <div class="hello">
+    <span class="av" id="av" aria-hidden="true"></span>
+    <div class="who">
+      <h1 id="hi">กำลังโหลด…</h1>
+      <p id="sub"></p>
+    </div>
+  </div>
+
+  <a class="hero" href="request.html?new=1" id="hero">
+    <span class="ic">📝</span>
+    <span class="t"><b>เบิกของ</b><span>เลือกของที่ต้องการ แล้วเดินไปรับที่คลัง</span></span>
+    <span class="go" aria-hidden="true">›</span>
+  </a>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="sec" id="secTodo" hidden>
+    <h2>ต้องทำตอนนี้</h2>
+    <div class="todo" id="todo"></div>
+  </section>
+
+  <section class="sec">
+    <h2>ใบเบิกล่าสุดของฉัน <a href="request.html">ดูทั้งหมด ›</a></h2>
+    <div class="mine" id="mine"></div>
+  </section>
+
+  <section class="sec" id="secMore" hidden>
+    <h2>เมนูอื่น ๆ</h2>
+    <div class="more" id="more"></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+$('#topbar').innerHTML = topbarHTML();
+
+function todoItem(cls, ic, title, detail, href) {
+  const a = document.createElement('a');
+  a.href = href; if (cls) a.className = cls;
+  a.innerHTML = '<span class="ic"></span><span class="tx"><b></b><span></span></span><span class="go" aria-hidden="true">›</span>';
+  $('.ic', a).textContent = ic;
+  $('.tx b', a).textContent = title;
+  $('.tx span', a).textContent = detail;
+  return a;
+}
+
+/** ช่องตัวเลขหนึ่งช่อง · attn=true คือมีของค้างต้องจัดการ · ic=ไอคอนประจำช่อง */
+function tile(k, v, unit, href, attn, ic) {
+  const a = document.createElement(href ? 'a' : 'div');
+  a.className = 'tile' + (attn ? ' attn' : '') + (Number(v) ? '' : ' zero');
+  if (href) a.href = href;
+  const i = document.createElement('span'); i.className = 'ic'; i.setAttribute('aria-hidden', 'true');
+  i.textContent = ic || '•';
+  const tx = document.createElement('span'); tx.className = 'tx';
+  const kk = document.createElement('span'); kk.className = 'k'; kk.textContent = k;
+  const vv = document.createElement('span'); vv.className = 'v'; vv.textContent = num(v);
+  if (unit) { const u = document.createElement('small'); u.textContent = unit; vv.appendChild(u); }
+  tx.append(kk, vv);
+  a.append(i, tx);
+  return a;
+}
+
+/** แถวตัวเลขสรุปบนหน้าแรก — ใช้ข้อมูลชุดเดียวกับส่วนอื่นของหน้า ไม่ยิง API ซ้ำ */
+function drawTiles(d) {
+  const box = $('#tiles'); box.innerHTML = '';
+  const wh = ME.role === 'warehouse' || ME.role === 'admin';
+  const pending = d.mine.filter((r) => r.status === 'pending').length;
+  box.appendChild(tile('ใบที่รอคลังจ่าย', pending, 'ใบ', 'request.html', pending > 0, '📋'));
+  box.appendChild(tile('ของที่ถืออยู่', d.held, 'ชิ้น', 'request.html#held', d.overdue > 0, '🔧'));
+  if (wh) {
+    box.appendChild(tile('รอฉันจ่ายของ', d.queue, 'ใบ', 'issue.html', d.queue > 0, '✅'));
+    box.appendChild(tile('ของใกล้หมด', d.low, 'รายการ', 'stock.html', d.low > 0, '📉'));
+  }
+}
+
+function drawTodo(d) {
+  const box = $('#todo'); box.innerHTML = '';
+  const wh = ME.role === 'warehouse' || ME.role === 'admin';
+  const od = d.assets.filter((t) => t.overdue);
+  if (od.length) box.appendChild(todoItem('bad', '⏰', `คืนครุภัณฑ์ ${od.length} ชิ้น`,
+    od.map((t) => t.item).join(' · ') + ' — เลยกำหนดคืนแล้ว', 'request.html#held'));
+  if (wh) {
+    if (d.queue) box.appendChild(todoItem('warn', '✅', `จ่ายของ ${d.queue} ใบ`,
+      'พนักงานส่งใบเบิกมารอแล้ว', 'issue.html'));
+    if (d.low) box.appendChild(todoItem('warn', '📉', `สั่งซื้อเพิ่ม ${d.low} รายการ`,
+      d.lowNames.join(' · '), 'stock.html'));
+    if (d.heldOverdue) box.appendChild(todoItem('bad', '🔧', `ตามครุภัณฑ์คืน ${d.heldOverdue} ชิ้น`,
+      'เลยกำหนดคืนแล้ว', 'assets.html'));
+  }
+  $('#secTodo').hidden = box.children.length === 0;
+}
+
+function drawMine(rows) {
+  const box = $('#mine'); box.innerHTML = '';
+  if (!rows.length) {
+    box.appendChild(emptyBox('📝', 'ยังไม่เคยเบิกของ',
+      'กดปุ่ม “เบิกของ” ด้านบนเพื่อเปิดใบแรก'));
+    return;
+  }
+  for (const r of rows.slice(0, 4)) {
+    const st = REQ_STATUS[r.status] || { t:r.status, c:'mute' };
+    const a = document.createElement('a');
+    a.href = 'request.html?doc=' + encodeURIComponent(r.id);
+    const tx = document.createElement('span'); tx.className = 'tx';
+    const no = document.createElement('span'); no.className = 'no';
+    no.textContent = r.no || '(ร่าง)';
+    const d = document.createElement('span'); d.className = 'dsc';
+    d.textContent = r.purpose || 'ไม่ได้ระบุเหตุผล';
+    tx.append(no, d);
+    // ป้ายสถานะ + ลูกศรอยู่ขวาสุดเสมอ — กวาดตาลงมาเป็นคอลัมน์เดียวได้ทุกแถว
+    const rt = document.createElement('span'); rt.className = 'rt';
+    const g = document.createElement('span'); g.className = 'go'; g.setAttribute('aria-hidden','true'); g.textContent = '›';
+    rt.append(pill(st.t, st.c), g);
+    a.append(tx, rt);
+    box.appendChild(a);
+  }
+}
+
+function drawMore() {
+  const wh = ME.role === 'warehouse' || ME.role === 'admin';
+  const links = [
+    { ic:'🔧', t:'ของที่ฉันถืออยู่', href:'request.html#held', show:true },
+    { ic:'✅', t:'อนุมัติและจ่ายของ', href:'issue.html',  show:wh },
+    { ic:'🏷️', t:'สินค้าและสต็อก',   href:'stock.html',  show:wh },
+    { ic:'🔍', t:'ครุภัณฑ์ในมือพนักงาน', href:'assets.html', show:wh },
+    { ic:'📊', t:'รายงานและงบประมาณ', href:'report.html', show:wh },
+    { ic:'👥', t:'ผู้ใช้และแผนก',     href:'admin.html',  show:ME.role === 'admin' },
+    { ic:'📘', t:'วิธีใช้ (คู่มือ)',    href:'guide.html',  show:true },
+    { ic:'📗', t:'คู่มือผู้ดูแลคลัง',   href:'guide-warehouse.html', show:wh },
+  ].filter((l) => l.show);
+  const box = $('#more'); box.innerHTML = '';
+  for (const l of links) {
+    const a = document.createElement('a');
+    a.href = l.href;
+    a.innerHTML = '<span class="ic"></span><span></span>';
+    $('.ic', a).textContent = l.ic;
+    a.lastElementChild.textContent = l.t;
+    box.appendChild(a);
+  }
+  $('#secMore').hidden = links.length === 0;
+}
+
+(async () => {
+  try {
+    const me = await initTopbar('app.html');
+    localStorage.setItem('eq_user', JSON.stringify(me));
+    $('#hi').textContent = 'สวัสดี ' + me.name;
+    // ตัวอักษรแรกของชื่อ — ชื่อไทยขึ้นต้นด้วยพยัญชนะเสมอ ตัดตัวแรกพอ (ชื่อว่างก็ยังไม่พัง)
+    $('#av').textContent = (me.name || '?').trim().charAt(0) || '?';
+    $('#sub').textContent = [ROLE_LABEL[me.role], me.dept].filter(Boolean).join(' · ');
+    drawMore();
+    // ดึงข้อมูลของหน้านี้ครั้งเดียวแล้วแจกให้ทุกส่วนใช้ — เดิมแถบงานค้างกับรายการล่าสุดยิง API ซ้ำกันเอง
+    const wh = me.role === 'warehouse' || me.role === 'admin';
+    const [mineRq, mineAsset, q, low, held] = await Promise.all([
+      api('/api/requisitions?box=mine').then((r) => r.requisitions).catch(() => []),
+      api('/api/assets/mine').then((r) => r.tags).catch(() => []),
+      wh ? api('/api/requisitions?box=queue').then((r) => r.requisitions).catch(() => []) : [],
+      wh ? api('/api/catalog/low-stock').then((r) => r.items).catch(() => []) : [],
+      wh ? api('/api/assets/held').then((r) => r).catch(() => ({ overdue: 0 })) : { overdue: 0 },
+    ]);
+    const data = {
+      mine: mineRq, assets: mineAsset, held: mineAsset.length,
+      overdue: mineAsset.filter((t) => t.overdue).length,
+      queue: q.length, low: low.length, heldOverdue: held.overdue || 0,
+      lowNames: low.slice(0, 3).map((i) => i.name),
+    };
+    drawTiles(data);
+    drawTodo(data);
+    drawMine(data.mine);
+  } catch (e) {
+    const box = $('#mine');
+    if (box) { box.innerHTML = ''; box.appendChild(errorBox(e.message, () => location.reload())); }
+    toast(e.message, 'bad');
+  }
+})();
+</script>
+</body>
+</html>
