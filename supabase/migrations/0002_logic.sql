@@ -9,8 +9,12 @@
 --   P0400 = ข้อมูลที่ส่งมาไม่ถูก · P0403 = ไม่มีสิทธิ์ · P0404 = ไม่พบ · P0409 = สถานะขัดกัน
 -- Edge Function อ่าน ERRCODE แล้วแปลงเป็น HTTP status ตรง ๆ (ดู supabase/functions/api/index.ts)
 
+-- id เป็น hex 24 ตัวเหมือนระบบเดิม (ของเดิมใช้ crypto.randomBytes(12) ใน Node)
+-- ⚠️ ห้ามใช้ gen_random_bytes() ของ pgcrypto — บน Supabase extension นี้อยู่ schema `extensions`
+--    ไม่ได้อยู่ใน search_path ของฟังก์ชัน จะพังตอน deploy ว่า "function does not exist"
+--    gen_random_uuid() เป็นของที่มากับ PostgreSQL 13+ ในตัว ใช้ได้ทั้งเครื่องทดสอบและบนคลาวด์
 create or replace function gen_id() returns text language sql volatile as $$
-  select encode(gen_random_bytes(12), 'hex');
+  select substr(replace(gen_random_uuid()::text, '-', ''), 1, 24);
 $$;
 
 create or replace function now_ms() returns bigint language sql stable as $$

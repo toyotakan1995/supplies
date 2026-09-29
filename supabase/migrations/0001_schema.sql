@@ -11,7 +11,7 @@
 --    ทางเข้าเดียวคือ Edge Function ที่ต่อด้วย service role และตรวจสิทธิ์เองในโค้ด
 --    (สถาปัตยกรรมเดียวกับของเดิม: ตรรกะสิทธิ์อยู่ที่ชั้นเดียว ไม่กระจายเป็น policy หลายสิบข้อ)
 
-create extension if not exists pgcrypto;
+-- ไม่ต้องใช้ pgcrypto แล้ว — gen_id() ใช้ gen_random_uuid() ที่มากับ PostgreSQL 13+ ในตัว
 
 /* ---------- คนและแผนก ---------- */
 create table if not exists departments(
