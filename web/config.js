@@ -8,5 +8,4 @@
  *
  * เว้นว่าง = ยิงไปที่โดเมนเดียวกับหน้าเว็บ (ใช้ตอนทดสอบในเครื่อง)
  */
-// ตอนนี้ตั้งไว้ที่เซิร์ฟเวอร์ทดสอบในเครื่อง — เปลี่ยนเป็นของ Supabase ตอนขึ้นจริง
-window.API_BASE = 'http://localhost:8000';
+window.API_BASE = 'https://kvbjqsyxmauzvlnzyube.supabase.co/functions/v1';
