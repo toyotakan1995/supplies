@@ -34,6 +34,14 @@ jobs:
           printf 'window.API_BASE = %s;\n' "'${{ vars.API_BASE }}'" > web/config.js
           cat web/config.js
 
+      # ต่อท้ายไฟล์ js/css ด้วยเลขเวอร์ชัน (7 ตัวแรกของ commit) — บังคับให้เบราว์เซอร์โหลดของใหม่
+      # ไม่งั้นพนักงานจะยังได้โค้ดเก่าจากแคชไปอีกราว 10 นาทีหลังอัปเดต และไม่มีทางรู้ว่าตัวเองเห็นของเก่า
+      - name: ใส่เลขเวอร์ชันท้ายไฟล์ js/css กันแคชค้าง
+        run: |
+          V=${GITHUB_SHA::7}
+          sed -i -E "s/(common\.js|brand\.css|config\.js)\"/\1?v=$V\"/g" web/*.html
+          grep -o 'common\.js?v=[a-z0-9]*' web/app.html | head -1
+
       # หมายเหตุ: อย่าใส่ enablement: true — GITHUB_TOKEN ไม่มีสิทธิ์เปิด Pages เอง แล้วขั้นนี้จะล้มทั้ง job
       # ต้องไปเปิดที่ Settings → Pages → Source: GitHub Actions ด้วยมือครั้งเดียว (ทำแล้ว)
       - uses: actions/configure-pages@v5
