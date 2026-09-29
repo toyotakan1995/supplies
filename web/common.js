@@ -706,7 +706,9 @@ function openChangePassword(force) {
                         : [{ label: 'ยกเลิก', onClick: closeModal }, { label: 'บันทึก', primary: true, onClick: save }];
   openModal(force ? 'ตั้งรหัสผ่านใหม่ก่อนเริ่มใช้งาน' : 'เปลี่ยนรหัสผ่าน', box, buttons, { sticky: true });
   // แบบบังคับ: ซ่อนปุ่มกากบาท ไม่ให้ปิดหนีไปใช้งานต่อโดยไม่เปลี่ยนรหัส
-  if (force) { const x = $('#mClose'); if (x) x.hidden = true; }
+  // ⚠️ ต้องสั่ง display:none ตรง ๆ — แอตทริบิวต์ hidden แพ้ค่า display ที่ตั้งไว้ใน brand.css
+  const x = $('#mClose');
+  if (x) { x.hidden = !!force; x.style.display = force ? 'none' : ''; }
 }
 
 async function refreshBell() {
