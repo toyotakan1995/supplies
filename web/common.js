@@ -656,6 +656,12 @@ async function initTopbar(active) {
     $('.r', me).textContent = roleTxt === ME.name ? '' : roleTxt;
     nav.appendChild(me);
 
+    const pw = document.createElement('button');
+    pw.className = 'out';
+    pw.textContent = 'เปลี่ยนรหัสผ่าน';
+    pw.onclick = () => openChangePassword(false);
+    nav.appendChild(pw);
+
     const out = document.createElement('button');
     out.className = 'out';
     out.textContent = 'ออกจากระบบ';
@@ -663,10 +669,44 @@ async function initTopbar(active) {
     nav.appendChild(out);
   }
   buildTabbar(active);
+  // พนักงานที่ย้ายรหัสผ่านมาจากระบบเดิมต้องตั้งรหัสใหม่ก่อนใช้งาน
+  // (เซิร์ฟเวอร์กั้นไว้อีกชั้นแล้ว กล่องนี้แค่ทำให้ผู้ใช้รู้ว่าต้องทำอะไร)
+  if (ME.mustChangePassword) openChangePassword(true);
   refreshBell();
   // เช็คแจ้งเตือนใหม่ทุก 60 วิ — ถี่พอสำหรับงานคลัง แต่ไม่กวนเซิร์ฟเวอร์
   setInterval(refreshBell, 60000);
   return ME;
+}
+
+/** กล่องเปลี่ยนรหัสผ่าน · force = เปิดแบบบังคับ (ปิดไม่ได้จนกว่าจะตั้งรหัสใหม่สำเร็จ) */
+function openChangePassword(force) {
+  const box = form(
+    (force
+      ? '<p class="hint" style="margin:0 0 14px">ระบบนี้เปิดให้เข้าใช้จากนอกออฟฟิศได้ ' +
+        'รหัสผ่านชุดเดิมที่ย้ายมาจากระบบใบสำคัญจ่ายจึงต้องเปลี่ยนก่อนเริ่มใช้งาน</p>'
+      : '') +
+    '<label class="fld"><span>รหัสผ่านเดิม</span><input type="password" id="pwCur" autocomplete="current-password"></label>' +
+    '<label class="fld"><span>รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)</span><input type="password" id="pwNew" autocomplete="new-password"></label>' +
+    '<label class="fld"><span>พิมพ์รหัสผ่านใหม่อีกครั้ง</span><input type="password" id="pwNew2" autocomplete="new-password"></label>');
+
+  const save = async () => {
+    const cur = $('#pwCur', box).value, a = $('#pwNew', box).value, b = $('#pwNew2', box).value;
+    if (a.length < 8) return showErr(box, 'รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร');
+    if (a !== b) return showErr(box, 'รหัสผ่านใหม่สองช่องไม่ตรงกัน');
+    try {
+      await api('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ current: cur, next: a }) });
+      closeModal();
+      toast('เปลี่ยนรหัสผ่านแล้ว', 'ok');
+      // โหลดหน้าใหม่เพื่อให้ข้อมูลที่ถูกกั้นไว้ตอนยังไม่เปลี่ยนรหัสถูกดึงมาครบ
+      if (force) setTimeout(() => location.reload(), 600);
+    } catch (e) { showErr(box, e.message); }
+  };
+
+  const buttons = force ? [{ label: 'ตั้งรหัสผ่านใหม่', primary: true, onClick: save }]
+                        : [{ label: 'ยกเลิก', onClick: closeModal }, { label: 'บันทึก', primary: true, onClick: save }];
+  openModal(force ? 'ตั้งรหัสผ่านใหม่ก่อนเริ่มใช้งาน' : 'เปลี่ยนรหัสผ่าน', box, buttons, { sticky: true });
+  // แบบบังคับ: ซ่อนปุ่มกากบาท ไม่ให้ปิดหนีไปใช้งานต่อโดยไม่เปลี่ยนรหัส
+  if (force) { const x = $('#mClose'); if (x) x.hidden = true; }
 }
 
 async function refreshBell() {

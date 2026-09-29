@@ -86,17 +86,19 @@ function dbErrStatus(e: unknown) {
 const r2 = (n: unknown) => Math.round((Number(n) || 0) * 100) / 100;
 
 /* ---------- ผู้ใช้ปัจจุบัน ---------- */
-type User = { id: string; empId: string; name: string; role: string; deptId: string | null; dept: string; position: string };
+type User = { id: string; empId: string; name: string; role: string; deptId: string | null; dept: string;
+              position: string; mustChangePassword: boolean };
 
 async function currentUser(req: Request): Promise<User> {
   const h = req.headers.get('authorization') ?? '';
   const data = await verifyToken(h.startsWith('Bearer ') ? h.slice(7) : null);
   if (!data?.id) throw new HttpErr('กรุณาเข้าสู่ระบบ', 401);
   const [u] = await sql`
-    select u.id, u.emp_id, u.name, u.role, u.dept_id, u.position, u.active, d.name as dept_name
+    select u.id, u.emp_id, u.name, u.role, u.dept_id, u.position, u.active, u.must_change_password, d.name as dept_name
     from users u left join departments d on d.id = u.dept_id where u.id = ${data.id}`;
   if (!u || !u.active) throw new HttpErr('บัญชีถูกปิดการใช้งาน กรุณาเข้าสู่ระบบใหม่', 401);
-  return { id: u.id, empId: u.emp_id, name: u.name, role: u.role, deptId: u.dept_id, dept: u.dept_name ?? '', position: u.position };
+  return { id: u.id, empId: u.emp_id, name: u.name, role: u.role, deptId: u.dept_id, dept: u.dept_name ?? '',
+           position: u.position, mustChangePassword: !!u.must_change_password };
 }
 const isWarehouse = (u: User) => u.role === 'warehouse' || u.role === 'admin';
 function needRole(u: User, ...roles: string[]) {
@@ -155,13 +157,24 @@ async function route(req: Request, path: string[], body: any): Promise<unknown> 
       const empId = String(body?.empId ?? '').trim();
       const password = String(body?.password ?? '');
       if (!empId || !password) throw new HttpErr('กรุณากรอกรหัสพนักงานและรหัสผ่าน', 400);
+      // ด่านกันไล่เดารหัส — ผิดครบ 5 ครั้งใน 15 นาที ล็อกบัญชีนั้นชั่วคราว
+      const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim();
+      const [{ out: guard }] = await sql`select api_login_check(${empId}, ${ip}) as out`;
+      if (guard.locked) {
+        const min = Math.ceil(guard.waitSec / 60);
+        throw new HttpErr(`กรอกรหัสผ่านผิดหลายครั้งเกินไป กรุณารออีก ${min} นาทีแล้วลองใหม่`, 429);
+      }
       const [u] = await sql`
         select u.*, d.name as dept_name from users u left join departments d on d.id = u.dept_id
         where u.emp_id = ${empId}`;
       // ตอบข้อความเดียวกันทั้งกรณีไม่มีรหัสนี้และรหัสผ่านผิด กันการไล่เดารหัสพนักงานที่มีจริง
-      if (!u || !verifyPassword(password, u.password)) throw new HttpErr('รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง', 401);
+      if (!u || !verifyPassword(password, u.password)) {
+        await sql`select api_login_record(${empId}, ${ip}, false)`;
+        throw new HttpErr('รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง', 401);
+      }
       if (!u.active) throw new HttpErr('บัญชีนี้ถูกปิดการใช้งาน กรุณาติดต่อผู้ดูแลระบบ', 403);
-      const user = { id: u.id, empId: u.emp_id, name: u.name, role: u.role, deptId: u.dept_id, dept: u.dept_name ?? '', position: u.position };
+      await sql`select api_login_record(${empId}, ${ip}, true)`;
+      const user = { id: u.id, empId: u.emp_id, name: u.name, role: u.role, deptId: u.dept_id, dept: u.dept_name ?? '', position: u.position, mustChangePassword: !!u.must_change_password };
       await audit(user as User, 'auth.login', 'users', u.id, null, req);
       return { token: await signToken({ id: u.id }), user };
     }
@@ -169,13 +182,16 @@ async function route(req: Request, path: string[], body: any): Promise<unknown> 
     if (rest[0] === 'me' && m === 'GET') return { user: me };
     if (rest[0] === 'change-password' && m === 'POST') {
       const next = String(body?.next ?? '');
-      if (next.length < 4) throw new HttpErr('รหัสผ่านใหม่ต้องยาวอย่างน้อย 4 ตัวอักษร', 400);
+      // ระบบนี้อยู่บนอินเทอร์เน็ต ไม่ใช่ในวง LAN แล้ว — ขั้นต่ำ 8 ตัวอักษร
+      if (next.length < 8) throw new HttpErr('รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร', 400);
       const [u] = await sql`select password from users where id = ${me.id}`;
       if (!u || !verifyPassword(String(body?.current ?? ''), u.password)) throw new HttpErr('รหัสผ่านเดิมไม่ถูกต้อง', 400);
+      if (verifyPassword(next, u.password)) throw new HttpErr('รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม', 400);
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const saltHex = [...salt].map((x) => x.toString(16).padStart(2, '0')).join('');
       const hash = scryptSync(next, saltHex, 64).toString('hex');
-      await sql`update users set password = ${saltHex + ':' + hash}, updated_at = now_ms() where id = ${me.id}`;
+      await sql`update users set password = ${saltHex + ':' + hash}, must_change_password = false,
+                updated_at = now_ms() where id = ${me.id}`;
       await audit(me, 'auth.change_password', 'users', me.id, null, req);
       return { ok: true };
     }
@@ -183,6 +199,10 @@ async function route(req: Request, path: string[], body: any): Promise<unknown> 
   }
 
   const me = await currentUser(req);
+  // ด่านบังคับเปลี่ยนรหัสผ่าน — กั้นที่เซิร์ฟเวอร์ ไม่ใช่แค่กล่องเด้งบนหน้าเว็บ
+  if (me.mustChangePassword) {
+    throw new HttpErr('กรุณาตั้งรหัสผ่านใหม่ก่อนใช้งานระบบ', 403);
+  }
 
   /* ---------- catalog ---------- */
   if (head === 'catalog') {

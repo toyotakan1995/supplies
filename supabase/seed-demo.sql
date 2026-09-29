@@ -6,7 +6,7 @@
 
 truncate stock_movements, requisition_approvals, requisition_items, requisitions,
          notifications, audit_log, asset_tags, items, categories, department_budgets,
-         users, departments, meta restart identity cascade;
+         users, departments, meta, login_attempts restart identity cascade;
 
 do $$
 declare
