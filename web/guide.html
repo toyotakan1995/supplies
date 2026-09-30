@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="brand.css">
 <style>
+  :root{--q:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.8'/%3E%3Cpath d='M9.6 9.7a2.5 2.5 0 1 1 4.2 1.9c-.9.7-1.8 1.2-1.8 2.5'/%3E%3Ccircle cx='12' cy='17.2' r='1' fill='%23000' stroke='none'/%3E%3C/svg%3E")}
   /* คู่มือนี้ตั้งใจให้ "ตัวใหญ่ อ่านออกเสียงตามได้" — คนที่ไม่ถนัดคอมพิวเตอร์ต้องทำตามได้เอง
      จึงใช้ตัวอักษรใหญ่กว่าหน้าอื่นในระบบ และ 1 บรรทัด = 1 เรื่อง
      หน้านี้ไม่โหลด common.js โดยตั้งใจ → เปิดดูได้โดยไม่ต้องเข้าสู่ระบบ */
@@ -57,8 +58,15 @@
   .qa details:last-child{border-bottom:0}
   .qa summary{font-size:17.5px; font-weight:700; cursor:pointer; list-style:none; display:flex; gap:10px; align-items:center}
   .qa summary::-webkit-details-marker{display:none}
-  .qa summary::before{content:'❓'; font-size:17px}
+  .qa summary::before{
+    content:''; flex:0 0 auto; width:19px; height:19px; background:currentColor; opacity:.55;
+    -webkit-mask:var(--q) center/contain no-repeat; mask:var(--q) center/contain no-repeat;
+  }
   .qa p{margin:10px 0 0 27px; font-size:16.5px; line-height:1.7; color:var(--ink-soft)}
+
+  /* ไอคอนที่แทรกกลางประโยค (ชื่อปุ่มในคู่มือ) — ให้สูงเท่าตัวอักษรและมีช่องไฟทางขวา */
+  .ib{display:inline-flex; margin-inline-end:5px; vertical-align:-.18em}
+  .ib svg.i{width:1.05em; height:1.05em}
 
   .backrow{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px}
 
@@ -88,7 +96,7 @@
 
   <div class="backrow">
     <a class="btn btn-primary" href="app.html">ไปที่ระบบ</a>
-    <button class="btn btn-ghost noprint" onclick="window.print()">🖨️ พิมพ์คู่มือ</button>
+    <button class="btn btn-ghost noprint" onclick="window.print()" data-i="printer">พิมพ์คู่มือ</button>
   </div>
 
   <section class="step">
@@ -100,7 +108,7 @@
       <svg viewBox="0 0 600 332" role="img" aria-label="ตัวอย่างหน้าเข้าระบบ">
         <rect width="600" height="332" fill="#f6f4f5"/>
         <rect x="150" y="22" width="300" height="288" rx="16" fill="#fff" stroke="#e6e1e3"/>
-        <text x="300" y="66" font-size="26" text-anchor="middle">🚗</text>
+        <use href="#i-car" x="287.0" y="45.2" width="26.0" height="26.0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         <text x="300" y="98" font-size="16" font-weight="700" text-anchor="middle" fill="#1b1d22">ระบบเบิกอุปกรณ์</text>
         <text x="176" y="132" font-size="13" fill="#6e7482">รหัสพนักงาน</text>
         <rect x="176" y="142" width="248" height="34" rx="9" fill="#fff" stroke="#d8d3d5"/>
@@ -112,7 +120,7 @@
         <text x="300" y="283" font-size="15" font-weight="700" text-anchor="middle" fill="#fff">เข้าสู่ระบบ</text>
       </svg>
     </div>
-    <div class="tip"><span class="ic">💡</span><span>จำรหัสผ่านไม่ได้ ให้บอกผู้ดูแลระบบ</span></div>
+    <div class="tip"><span class="ic" data-i="bulb"></span><span>จำรหัสผ่านไม่ได้ ให้บอกผู้ดูแลระบบ</span></div>
   </section>
 
   <section class="step">
@@ -125,7 +133,7 @@
         <text x="30" y="42" font-size="18" font-weight="700" fill="#1b1d22">สวัสดี สมชาย</text>
         <text x="30" y="68" font-size="13" fill="#6e7482">พนักงาน · แผนกบริการ</text>
         <rect x="30" y="88" width="540" height="72" rx="15" fill="#e60012"/>
-        <text x="58" y="133" font-size="28">📝</text>
+        <use href="#i-newdoc" x="58.0" y="110.6" width="28.0" height="28.0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         <text x="106" y="122" font-size="19" font-weight="700" fill="#fff">เบิกของ</text>
         <text x="106" y="146" font-size="13.5" fill="#ffe4e7">เลือกของที่ต้องการ แล้วเดินไปรับที่คลัง</text>
         <text x="536" y="132" font-size="22" fill="#fff">›</text>
@@ -147,7 +155,7 @@
 
         <rect x="24" y="96" width="264" height="216" rx="14" fill="#fff7f8" stroke="#e60012" stroke-width="2"/>
         <rect x="38" y="110" width="236" height="102" rx="10" fill="#fff" stroke="#eee"/>
-        <text x="156" y="176" font-size="44" text-anchor="middle">✏️</text>
+        <use href="#i-pencil" x="134.0" y="140.8" width="44.0" height="44.0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         <text x="38" y="236" font-size="15" font-weight="700" fill="#1b1d22">ดินสอ</text>
         <text x="38" y="262" font-size="12.5" fill="#6e7482">อุปกรณ์เครื่องเขียน</text>
         <rect x="38" y="272" width="36" height="30" rx="9" fill="#fff" stroke="#d8d3d5"/>
@@ -158,14 +166,14 @@
 
         <rect x="312" y="96" width="264" height="216" rx="14" fill="#fff" stroke="#e6e1e3"/>
         <rect x="326" y="110" width="236" height="102" rx="10" fill="#f6f4f5" stroke="#eee"/>
-        <text x="444" y="176" font-size="44" text-anchor="middle">📒</text>
+        <use href="#i-clipboard" x="422.0" y="140.8" width="44.0" height="44.0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         <text x="326" y="236" font-size="15" font-weight="700" fill="#1b1d22">สมุด</text>
         <text x="326" y="262" font-size="12.5" fill="#6e7482">อุปกรณ์เครื่องเขียน</text>
         <rect x="326" y="272" width="98" height="26" rx="13" fill="#eef0f4"/>
         <text x="375" y="290" font-size="12.5" text-anchor="middle" fill="#4a505e">เหลือ 30 เล่ม</text>
       </svg>
     </div>
-    <div class="tip"><span class="ic">💡</span><span>หาของไม่เจอ ให้พิมพ์ชื่อสั้น ๆ เช่น พิมพ์แค่ <b>ปากกา</b></span></div>
+    <div class="tip"><span class="ic" data-i="bulb"></span><span>หาของไม่เจอ ให้พิมพ์ชื่อสั้น ๆ เช่น พิมพ์แค่ <b>ปากกา</b></span></div>
   </section>
 
   <section class="step">
@@ -179,7 +187,7 @@
         <text x="24" y="32" font-size="13.5" font-weight="700" fill="#4a505e">ของที่จะเบิก</text>
         <rect x="24" y="44" width="552" height="52" rx="12" fill="#fff7f8" stroke="#e60012"/>
         <rect x="38" y="56" width="30" height="30" rx="8" fill="#fff" stroke="#eee"/>
-        <text x="53" y="79" font-size="16" text-anchor="middle">✏️</text>
+        <use href="#i-pencil" x="45.0" y="66.2" width="16.0" height="16.0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         <text x="80" y="68" font-size="14.5" font-weight="700" fill="#1b1d22">ดินสอ</text>
         <text x="80" y="88" font-size="12" fill="#6e7482">หน่วย: แท่ง</text>
         <text x="546" y="77" font-size="15" font-weight="700" text-anchor="end" fill="#1b1d22">2</text>
@@ -214,7 +222,7 @@
         <text x="42" y="162" font-size="13" fill="#6e7482">→ เดินไปรับของได้เลย</text>
       </svg>
     </div>
-    <div class="tip"><span class="ic">🔔</span><span>ดูใบของตัวเองได้ที่เมนู <b>ใบเบิกของฉัน</b></span></div>
+    <div class="tip"><span class="ic" data-i="bell"></span><span>ดูใบของตัวเองได้ที่เมนู <b>ใบเบิกของฉัน</b></span></div>
   </section>
 
   <section class="step">
@@ -227,7 +235,7 @@
         <rect width="600" height="128" fill="#f6f4f5"/>
         <rect x="24" y="22" width="552" height="84" rx="13" fill="#fff" stroke="#e6e1e3"/>
         <rect x="40" y="40" width="48" height="48" rx="10" fill="#f6f4f5" stroke="#eee"/>
-        <text x="64" y="74" font-size="24" text-anchor="middle">💻</text>
+        <use href="#i-laptop" x="52.0" y="54.8" width="24.0" height="24.0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         <text x="104" y="58" font-size="15" font-weight="700" fill="#1b1d22">โน้ตบุ๊ก Dell · NB-014</text>
         <text x="104" y="82" font-size="13" fill="#6e7482">ต้องคืนภายใน 30 ก.ย. 2569</text>
       </svg>
@@ -260,7 +268,7 @@
 
   <h2 class="sec">สำหรับผู้ดูแลคลัง</h2>
   <p class="lead" style="margin-bottom:14px">งานคลังมีคู่มือแยกอีกเล่ม —
-    <a href="guide-warehouse.html" style="color:var(--brand-700); font-weight:700">📗 คู่มือผู้ดูแลคลัง</a><br>
+    <a href="guide-warehouse.html" style="color:var(--brand-700); font-weight:700" data-i="book">คู่มือผู้ดูแลคลัง</a><br>
     (คีย์ของเข้าระบบ · รับของเข้า · จ่ายของ · รับคืนครุภัณฑ์ · ปรับยอด)</p>
   <section class="step">
     <h2><span class="n">＋</span> ใส่รูปให้ของ</h2>
@@ -272,18 +280,24 @@
       <svg viewBox="0 0 600 146" role="img" aria-label="ตัวอย่างช่องใส่รูปสินค้า">
         <rect width="600" height="146" fill="#fff"/>
         <rect x="24" y="24" width="88" height="88" rx="12" fill="#f6f4f5" stroke="#e6e1e3"/>
-        <text x="68" y="82" font-size="34" text-anchor="middle">📦</text>
+        <use href="#i-package" x="51.0" y="54.8" width="34.0" height="34.0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         <rect x="130" y="30" width="152" height="34" rx="9" fill="#eef0f4" stroke="#d8d3d5"/>
         <text x="206" y="52" font-size="14" font-weight="600" text-anchor="middle" fill="#1b1d22">เลือกรูปสินค้า</text>
         <text x="130" y="88" font-size="13" fill="#6e7482">ถ่ายจากมือถือได้เลย</text>
         <text x="130" y="110" font-size="13" fill="#6e7482">ระบบย่อรูปให้อัตโนมัติ</text>
       </svg>
     </div>
-    <div class="tip warn"><span class="ic">⚠️</span><span>ของที่มีรูป พนักงานหยิบถูกกว่ามาก ควรใส่รูปให้ครบทุกอย่าง</span></div>
+    <div class="tip warn"><span class="ic" data-i="warn"></span><span>ของที่มีรูป พนักงานหยิบถูกกว่ามาก ควรใส่รูปให้ครบทุกอย่าง</span></div>
   </section>
 
   <p class="lead" style="margin-top:26px">ใช้ไม่เป็น ถามผู้ดูแลระบบได้ตลอด</p>
 </main>
 
+<script src="icons.js"></script>
+<script>
+  /* คู่มือเป็นหน้า HTML นิ่ง ๆ (ไม่โหลด common.js เพื่อให้เปิดอ่านได้โดยไม่ต้องเข้าสู่ระบบ)
+     จึงเติมไอคอนให้ทุกจุดที่ทำเครื่องหมาย data-i ไว้ ตอนที่ sprite พร้อมแล้ว */
+  for (const el of document.querySelectorAll('[data-i]')) el.prepend(icon(el.dataset.i));
+</script>
 </body>
 </html>

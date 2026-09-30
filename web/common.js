@@ -94,6 +94,7 @@ function openModal(title, bodyEl, buttons, opts) {
     const el = document.createElement('button');
     el.className = 'btn ' + (b.primary ? 'btn-primary' : b.danger ? 'btn-danger' : 'btn-ghost');
     el.textContent = b.label;
+    if (b.icon) el.prepend(icon(b.icon));
     el.onclick = lockWhileBusy(el, b.onClick);
     $('#mFoot').appendChild(el);
   }
@@ -134,10 +135,40 @@ function lockWhileBusy(el, fn) {
 }
 
 function form(html) { const d = document.createElement('div'); d.innerHTML = html; return d; }
-function showErr(box, msg) {
+/**
+ * แจ้งว่ากรอกไม่ผ่าน — วางไว้บนสุดของกล่อง
+ *
+ * 🔑 เดิมเป็นแค่กล่องสีแดงเฉย ๆ · คนที่ใช้โปรแกรมอ่านหน้าจอกดส่งแล้ว "เงียบ"
+ *    ไม่รู้เลยว่าไม่ผ่าน เพราะโฟกัสยังค้างอยู่ที่ปุ่มส่ง และไม่มีอะไรประกาศออกมา
+ *    role=alert ทำให้ประกาศทันทีที่ข้อความโผล่ · tabindex=-1 + focus() พาโฟกัสมาที่ตัวข้อความ
+ *    กด Tab ต่อจากนี้จึงไล่เข้าช่องที่ต้องแก้พอดี ไม่ต้องไล่จากต้นฟอร์มใหม่
+ *
+ * @param {Element}  box    กล่องที่จะเอาข้อความไปแปะไว้บนสุด
+ * @param {string}   msg    ต้องบอกด้วยว่าให้แก้ยังไง ไม่ใช่แค่ "ข้อมูลไม่ถูกต้อง"
+ * @param {Element} [field] ช่องที่ผิด — ถ้าส่งมาจะผูกข้อความเข้ากับช่องนั้นให้ด้วย
+ */
+function showErr(box, msg, field) {
   let e = box.querySelector('.merr');
-  if (!e) { e = document.createElement('div'); e.className = 'merr'; box.prepend(e); }
-  e.hidden = false; e.textContent = msg; e.scrollIntoView({ block:'nearest' });
+  if (!e) {
+    e = document.createElement('div');
+    e.className = 'merr';
+    e.id = 'merr-' + Math.random().toString(36).slice(2, 8);
+    e.setAttribute('role', 'alert');
+    e.setAttribute('tabindex', '-1');
+    box.prepend(e);
+  }
+  e.hidden = false; e.textContent = msg;
+  if (field) {
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', e.id);
+    // ล้างสถานะผิดทันทีที่เริ่มแก้ ไม่งั้นช่องจะค้างเป็นสีแดงทั้งที่แก้ถูกแล้ว
+    field.addEventListener('input', () => {
+      field.removeAttribute('aria-invalid');
+      e.hidden = true;
+    }, { once: true });
+  }
+  e.scrollIntoView({ block:'nearest' });
+  e.focus();
 }
 
 /* ---------- รูปสินค้า ----------
@@ -209,9 +240,9 @@ function rowBtn(label, cls, fn) {
 /** เนื้อในของสถานะ "ไม่มีข้อมูล" — ไอคอน + พาดหัว + คำอธิบาย (คำอธิบายจะใส่หรือไม่ก็ได้)
  *  แยก "ยังไม่มีของในระบบ" ออกจาก "หาไม่เจอ" ให้ชัด ไม่งั้นวันแรกที่เปิดใช้
  *  พนักงานจะนึกว่าตัวเองพิมพ์ผิด ทั้งที่คลังยังไม่ได้คีย์ของ */
-function emptyBody(icon, title, hint) {
+function emptyBody(ic, title, hint) {
   const f = document.createDocumentFragment();
-  if (icon) { const i = document.createElement('span'); i.className = 'ic'; i.textContent = icon; f.appendChild(i); }
+  if (ic) { const i = document.createElement('span'); i.className = 'ic'; i.appendChild(icon(ic)); f.appendChild(i); }
   const b = document.createElement('b'); b.textContent = title; f.appendChild(b);
   if (hint) { const h = document.createElement('span'); h.className = 'hint'; h.textContent = hint; f.appendChild(h); }
   return f;
@@ -255,7 +286,7 @@ function errorBox(msg, onRetry) {
   const d = document.createElement('div');
   d.className = 'empty box';
   d.setAttribute('role', 'alert');
-  d.appendChild(emptyBody('📡', 'โหลดข้อมูลไม่สำเร็จ', msg || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'));
+  d.appendChild(emptyBody('offline', 'โหลดข้อมูลไม่สำเร็จ', msg || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'));
   if (onRetry) {
     const b = document.createElement('button');
     b.className = 'btn btn-primary'; b.textContent = 'ลองใหม่';
@@ -266,17 +297,17 @@ function errorBox(msg, onRetry) {
 }
 
 /** กล่อง "ไม่มีข้อมูล" แบบเดี่ยว สำหรับที่ที่ไม่ใช่ตาราง */
-function emptyBox(icon, title, hint) {
+function emptyBox(ic, title, hint) {
   const d = document.createElement('div');
   d.className = 'empty box';
-  d.appendChild(emptyBody(icon, title, hint));
+  d.appendChild(emptyBody(ic, title, hint));
   return d;
 }
-function emptyRow(cols, title, hint, icon) {
+function emptyRow(cols, title, hint, ic) {
   const tr = document.createElement('tr');
   const td = document.createElement('td');
   td.colSpan = cols; td.className = 'empty';
-  td.appendChild(emptyBody(icon === undefined ? '📭' : icon, title, hint));
+  td.appendChild(emptyBody(ic === undefined ? 'inbox' : ic, title, hint));
   tr.appendChild(td); return tr;
 }
 
@@ -363,7 +394,7 @@ function makeSelect(sel) {
       b.setAttribute('role', 'option');
       b.setAttribute('aria-selected', String(i === sel.selectedIndex));
       b.disabled = o.disabled;
-      b.innerHTML = '<span class="tick" aria-hidden="true">✓</span><span></span>';
+      b.innerHTML = '<span class="tick" aria-hidden="true">' + iconHTML('check', 'sm') + '</span><span></span>';
       b.lastElementChild.textContent = o.textContent;
       b.onclick = () => {
         if (o.disabled) return;
@@ -413,7 +444,7 @@ function makeDate(inp) {
   btn.type = 'button'; btn.className = 'dpick-btn';
   btn.setAttribute('aria-haspopup', 'dialog');
   btn.setAttribute('aria-expanded', 'false');
-  btn.innerHTML = '<span class="ic" aria-hidden="true">📅</span><span class="lbl"></span>';
+  btn.innerHTML = '<span class="ic" aria-hidden="true">' + iconHTML('calendar') + '</span><span class="lbl"></span>';
   wrap.appendChild(btn);
 
   const clr = document.createElement('button');
@@ -633,7 +664,7 @@ async function initTopbar(active) {
     help.className = 'help keep';
     help.title = 'วิธีใช้ระบบ';
     help.setAttribute('aria-label', 'วิธีใช้ระบบ');
-    help.textContent = '❓';
+    help.appendChild(icon('help'));
     nav.appendChild(help);
 
     const sep = document.createElement('span');
@@ -642,7 +673,7 @@ async function initTopbar(active) {
 
     const bell = document.createElement('button');
     bell.id = 'bell'; bell.className = 'bell'; bell.title = 'การแจ้งเตือน';
-    bell.innerHTML = '🔔<span class="dot" id="bellDot" hidden></span>';
+    bell.innerHTML = iconHTML('bell') + '<span class="dot" id="bellDot" hidden></span>';
     bell.onclick = openBell;
     nav.appendChild(bell);
 
@@ -724,7 +755,7 @@ function openBell() {
   const list = window.__noti || [];
   const box = document.createElement('div');
   if (!list.length) {
-    box.appendChild(emptyBox('🔔', 'ยังไม่มีการแจ้งเตือน',
+    box.appendChild(emptyBox('bell', 'ยังไม่มีการแจ้งเตือน',
       'ระบบจะเตือนที่นี่เมื่อมีใบเบิกถึงคิวคุณ หรือของที่ยืมใกล้ครบกำหนดคืน'));
   }
   for (const n of list) {
@@ -756,13 +787,13 @@ function topbarHTML(subtitle) {
    ============================================================ */
 function buildTabbar(active) {
   const all = [
-    { href:'app.html',     ic:'🏠', lb:'หน้าหลัก',  all:true },
-    { href:'request.html', ic:'📋', lb:'ใบเบิกของฉัน', all:true },
-    { href:'issue.html',   ic:'✅', lb:'จ่ายของ',   wh:true, badge:'queue' },
-    { href:'stock.html',   ic:'🏷️', lb:'สต็อก',     wh:true },
-    { href:'assets.html',  ic:'🔧', lb:'ครุภัณฑ์',  wh:true },
-    { href:'report.html',  ic:'📊', lb:'รายงาน',    wh:true },
-    { href:'admin.html',   ic:'👥', lb:'ผู้ใช้',     admin:true },
+    { href:'app.html',     ic:'home',      lb:'หน้าหลัก',     all:true },
+    { href:'request.html', ic:'clipboard', lb:'ใบเบิกของฉัน', all:true },
+    { href:'issue.html',   ic:'checkcirc', lb:'จ่ายของ',      wh:true, badge:'queue' },
+    { href:'stock.html',   ic:'tag',       lb:'สต็อก',        wh:true },
+    { href:'assets.html',  ic:'wrench',    lb:'ครุภัณฑ์',      wh:true },
+    { href:'report.html',  ic:'chart',     lb:'รายงาน',       wh:true },
+    { href:'admin.html',   ic:'users',     lb:'ผู้ใช้',        admin:true },
   ];
   const wh = ME.role === 'warehouse' || ME.role === 'admin';
   let items = all.filter((t) => t.all || (t.wh && wh) || (t.admin && ME.role === 'admin'));
@@ -782,7 +813,7 @@ function buildTabbar(active) {
     a.href = t.href;
     if (t.href === active) { a.className = 'on'; a.setAttribute('aria-current', 'page'); }
     a.innerHTML = '<span class="ic"></span><span class="lb"></span>';
-    $('.ic', a).textContent = t.ic;
+    $('.ic', a).appendChild(icon(t.ic));
     $('.lb', a).textContent = t.lb;
     if (t.badge === 'queue') {
       const n = document.createElement('span');
@@ -794,7 +825,7 @@ function buildTabbar(active) {
   if (overflow.length) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.innerHTML = '<span class="ic">⋯</span><span class="lb">เพิ่มเติม</span>';
+    b.innerHTML = '<span class="ic">' + iconHTML('more') + '</span><span class="lb">เพิ่มเติม</span>';
     b.onclick = () => {
       const box = document.createElement('div');
       box.className = 'morelist';
@@ -802,7 +833,7 @@ function buildTabbar(active) {
         const a = document.createElement('a');
         a.className = 'moreitem'; a.href = t.href;
         a.innerHTML = '<span class="ic"></span><span></span>';
-        $('.ic', a).textContent = t.ic;
+        $('.ic', a).appendChild(icon(t.ic));
         a.lastElementChild.textContent = t.lb;
         box.appendChild(a);
       }

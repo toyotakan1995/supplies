@@ -86,9 +86,14 @@
   .step{display:flex; align-items:center; gap:2px; flex:0 0 auto}
   /* ในการ์ด: กางเต็มความกว้าง ปุ่ม − ซ้ายสุด + ขวาสุด เลขอยู่กลาง · ดันไปชิดล่างการ์ดเสมอ
      (margin-top:auto ทำให้การ์ดในแถวเดียวกันมีแถบปุ่มอยู่ระดับเดียวกันแม้ชื่อยาวไม่เท่ากัน) */
-  .prow .step{width:100%; justify-content:space-between; margin-top:auto}
+  /* 🐞 ต้องมี flex-wrap:wrap ไม่งั้น .cap (flex-basis:100%) ตกบรรทัดใหม่ไม่ได้
+        มันจะถูกบีบเป็นแถบตั้งแคบ ๆ ข้างปุ่ม + แล้วล้นออกนอกการ์ด
+        ("มีอยู่ 94" กลายเป็นตัวอักษรเรียงลงมาทีละตัวนอกกรอบ — เจอตอนขยายปุ่มเป็น 44px) */
+  .prow .step{width:100%; justify-content:space-between; margin-top:auto; flex-wrap:wrap}
+  /* 44px = ขนาดต่ำสุดที่ Apple HIG กำหนดสำหรับนิ้วโป้ง · เดิม 40px กดพลาดบ่อยบนมือถือ
+     โดยเฉพาะปุ่ม − กับ + ที่อยู่คนละฝั่งของการ์ดแคบ ๆ */
   .step button{
-    width:40px; height:40px; flex:0 0 auto; font:inherit; font-size:20px; line-height:1; cursor:pointer;
+    width:44px; height:44px; flex:0 0 auto; font:inherit; font-size:20px; line-height:1; cursor:pointer;
     border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:10px;
   }
   .step button:hover{background:var(--panel-2)}
@@ -100,6 +105,14 @@
     width:52px; flex:0 0 52px; text-align:center; font-size:16px; font-weight:700; padding:8px 2px;
     border:0; background:none; font-variant-numeric:tabular-nums;
   }
+  /* ในการ์ด ช่องตัวเลขต้องยืดตามที่เหลือ — ปุ่ม 44+44 บวกช่อง 52px ตายตัว รวมกว้างเกินการ์ด 163px
+     ต้องประกาศ "หลัง" กฎข้างบน เพราะน้ำหนัก selector เท่ากัน ตัวที่อยู่ทีหลังจึงชนะ
+
+     🔑 ต้องกำหนด flex-basis เป็นตัวเลข ห้ามใช้ auto
+        basis:auto = ไปเอาค่าจาก width ซึ่ง brand.css ตั้ง input ทุกตัวไว้ 100%
+        (brand.css โหลดทีหลัง <style> ของหน้า น้ำหนักเท่ากันจึงชนะ)
+        ผลคือช่องตัวเลขกินเต็มแถว ดันปุ่ม − กับ + ตกบรรทัดคนละบรรทัด */
+  .prow .step input{flex:1 1 44px; min-width:44px}
   .step input:focus{outline:none; background:var(--panel-2); border-radius:8px}
   .step button:disabled{opacity:.4; cursor:not-allowed}
   /* ป้ายบอกเพดาน — อยู่ใต้แถบปุ่ม กินเต็มความกว้างการ์ด */
@@ -137,8 +150,33 @@
     display:flex; align-items:center; gap:9px;
   }
   .picked-head::after{content:""; flex:1; height:1px; background:var(--line)}
+  .pcount{margin:8px 0 0; font-size:13px; color:var(--muted); min-height:1.2em}
+  .pcount:empty{margin:0}
   .cartcount{font-size:14.5px; color:var(--muted); margin-inline-end:auto; align-self:center}
   .cartcount b{color:var(--ink); font-weight:700}
+
+  /* ---------- แถบบอกขั้นตอน ----------
+     เดิมมีแค่ปุ่ม "ถัดไป ›" คนกดแล้วไม่รู้ว่าเหลืออีกกี่ขั้น จะจบเมื่อไหร่
+     พนักงานที่เบิกเดือนละครั้งจึงลังเลว่ากดแล้วจะส่งเลยไหม (กลัวส่งผิด)
+     บอกให้ชัดว่า "ขั้นที่ 1 จาก 2" และขั้นต่อไปชื่ออะไร */
+  .wiz{display:flex; align-items:center; gap:8px; margin:-4px 0 18px}
+  .wiz .s{
+    display:flex; align-items:center; gap:7px; flex:1; min-width:0;
+    font-size:13px; color:var(--muted);
+  }
+  .wiz .s .n{
+    flex:0 0 auto; width:23px; height:23px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:12.5px; font-weight:700;
+    background:var(--line); color:var(--ink-soft);
+  }
+  .wiz .s .t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .wiz .s.on{color:var(--ink); font-weight:700}
+  .wiz .s.on .n{background:var(--brand); color:#fff}
+  /* ขั้นที่ผ่านมาแล้ว — ทึบพอให้รู้ว่าทำแล้ว แต่ไม่แย่งสายตาจากขั้นปัจจุบัน */
+  .wiz .s.done .n{background:var(--ok); color:#fff}
+  .wiz .s.done{color:var(--ink-soft)}
+  .wiz .bar{flex:0 0 22px; height:2px; background:var(--line); border-radius:2px}
 
   /* ---------- รายละเอียดใบ ---------- */
   /* แถบบนสุด: สถานะซ้าย วันที่ขวา */
@@ -209,7 +247,7 @@
       <h1>ใบเบิกของฉัน</h1>
       <p class="sub">ติดตามว่าใบไหนรอคลังอยู่ ใบไหนรับของได้แล้ว</p>
     </div>
-    <button class="btn btn-primary" id="btnNew">📝 เบิกของ</button>
+    <button class="btn btn-primary" id="btnNew"></button>
   </div>
 
   <div class="tabs" role="tablist">
@@ -222,9 +260,11 @@
 </main>
 
 <script src="config.js"></script>
+<script src="icons.js"></script>
 <script src="common.js"></script>
 <script>
 $('#topbar').innerHTML = topbarHTML();
+$('#btnNew').innerHTML = iconHTML('newdoc') + 'เบิกของ';
 
 let ITEMS = [], CART = [], EDITING = null, STEP = 1;
 
@@ -244,12 +284,12 @@ const NEXT_STEP = {
   partial:  'ได้ไม่ครบ — ส่วนที่ขาดต้องเปิดใบใหม่',
 };
 // ไอคอนประจำขั้นต่อไป — ช่วยให้กวาดตาเห็นก่อนอ่านข้อความ (ใช้ในกล่องรายละเอียดใบ)
-const NEXT_ICON = { draft:'✏️', pending:'🚶', partial:'⚠️' };
+const NEXT_ICON = { draft:'pencil', pending:'store', partial:'warn' };
 
 function drawList(rows) {
   const box = $('#rqs'); box.innerHTML = '';
   if (!rows.length) {
-    box.appendChild(emptyBox('📝', 'ยังไม่เคยเบิกของ',
+    box.appendChild(emptyBox('newdoc', 'ยังไม่เคยเบิกของ',
       'กดปุ่ม “เบิกของ” ด้านบน เลือกของที่ต้องการ แล้วเดินไปรับที่คลังได้เลย'));
     return;
   }
@@ -350,12 +390,16 @@ function drawPickList(q) {
   box.innerHTML = '';
   const list = ITEMS.filter((i) => !q ||
     (i.name + ' ' + i.code + ' ' + (i.category || '')).toLowerCase().includes(q.toLowerCase()));
+  // บอกจำนวนที่เจอทุกครั้งที่พิมพ์ · aria-live ทำให้คนที่ใช้โปรแกรมอ่านหน้าจอรู้ผลด้วย
+  // (เดิมพิมพ์แล้วรายการเปลี่ยนเงียบ ๆ ไม่มีอะไรบอกว่าเหลือกี่ชิ้น)
+  const cnt = $('#pcount');
+  if (cnt) cnt.textContent = q ? (list.length ? 'เจอ ' + list.length + ' รายการ' : '') : '';
   if (!list.length) {
     // แยกให้ชัดระหว่าง "หาไม่เจอ" กับ "คลังยังไม่ได้คีย์ของเข้าระบบเลย"
     // วันแรกที่เปิดใช้ ระบบยังไม่มีสินค้าสักชิ้น ถ้าบอกว่า "ไม่พบของที่ค้นหา" พนักงานจะนึกว่าตัวเองพิมพ์ผิด
     const p = ITEMS.length
-      ? emptyBox('🔍', 'ไม่พบของที่ค้นหา', 'ลองพิมพ์คำสั้นลง เช่น “ปากกา” แทน “ปากกาลูกลื่นสีน้ำเงิน”')
-      : emptyBox('📦', 'คลังยังไม่ได้ลงรายการของในระบบ', 'ติดต่อผู้ดูแลคลังให้เพิ่มรายการก่อน แล้วค่อยกลับมาเบิก');
+      ? emptyBox('search', 'ไม่พบของที่ค้นหา', 'ลองพิมพ์คำสั้นลง เช่น “ปากกา” แทน “ปากกาลูกลื่นสีน้ำเงิน”')
+      : emptyBox('package', 'คลังยังไม่ได้ลงรายการของในระบบ', 'ติดต่อผู้ดูแลคลังให้เพิ่มรายการก่อน แล้วค่อยกลับมาเบิก');
     box.appendChild(p); return;
   }
   for (const it of list) {
@@ -364,9 +408,9 @@ function drawPickList(q) {
 
     // ภาพย่อมาก่อนชื่อ — พนักงานหน้างานจำหน้าตาของได้แม่นกว่าชื่อในระบบ
     const th = document.createElement('span'); th.className = 'ithumb';
-    th.textContent = '📦';
-    const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.appendChild(im);
-    if (it.hasImage) setItemImg(im, it.id).then(() => { if (!im.hidden) th.firstChild.textContent = ''; });
+    const ph = document.createElement('span'); ph.className = 'ph'; ph.appendChild(icon('package'));
+    const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.append(ph, im);
+    if (it.hasImage) setItemImg(im, it.id).then(() => { if (!im.hidden) ph.hidden = true; });
     row.appendChild(th);
 
     const info = document.createElement('div'); info.className = 'info';
@@ -405,15 +449,32 @@ function drawPickList(q) {
   }
 }
 
-function paintCount() {
-  const el = $('#cartCount');
-  if (!el) return;
-  const n = CART.length;
-  el.innerHTML = '';
-  if (!n) { el.textContent = 'ยังไม่ได้เลือกของ'; return; }
-  const b = document.createElement('b'); b.textContent = n + ' รายการ';
-  el.append('เลือกแล้ว ', b);
+/** แถบ "ขั้นที่ x จาก 2" — ใส่ไว้บนสุดของกล่องทุกครั้งที่วาดใหม่ */
+function wizBar(step) {
+  const NAMES = ['เลือกของ', 'ยืนยันและส่ง'];
+  const w = document.createElement('div');
+  w.className = 'wiz';
+  // โปรแกรมอ่านหน้าจอได้ยินประโยคเดียวจบ ไม่ต้องไล่อ่านตัวเลขกับชื่อขั้นทีละก้อน
+  w.setAttribute('role', 'group');
+  w.setAttribute('aria-label', 'ขั้นที่ ' + step + ' จาก 2 · ' + NAMES[step - 1]);
+  NAMES.forEach((name, i) => {
+    const no = i + 1;
+    if (i) { const b = document.createElement('span'); b.className = 'bar'; w.appendChild(b); }
+    const s = document.createElement('span');
+    s.className = 's' + (no === step ? ' on' : no < step ? ' done' : '');
+    const nn = document.createElement('span'); nn.className = 'n';
+    nn.textContent = no < step ? '✓' : String(no);
+    const tt = document.createElement('span'); tt.className = 't'; tt.textContent = name;
+    s.append(nn, tt);
+    w.appendChild(s);
+  });
+  return w;
 }
+
+/** จำนวนที่เลือกไว้ตอนนี้ — แสดงบนปุ่ม "ถัดไป" ของขั้นที่ 1
+    ทุกครั้งที่เพิ่ม/ลดของต้องวาดแถบปุ่มใหม่ ป้ายบนปุ่มจะได้ตรงกับตะกร้าเสมอ */
+function paintCount() { if (STEP === 1) paintFootRef && paintFootRef(); }
+let paintFootRef = null;
 
 /* ---------- ฟอร์มเปิดใบเบิก (2 ขั้น) ---------- */
 async function openForm(draft) {
@@ -438,7 +499,7 @@ async function openForm(draft) {
       const ok = document.createElement('div');
       ok.className = 'sent';
       ok.innerHTML =
-        '<span class="ic">✅</span>' +
+        '<span class="ic">' + iconHTML('checkcirc') + '</span>' +
         '<b>ส่งให้คลังแล้ว</b>' +
         '<span class="no"></span>' +
         '<span class="hint">รอสถานะเปลี่ยนเป็น <b>“รับของแล้ว”</b> แล้วเดินไปรับที่คลังได้เลย<br>' +
@@ -447,6 +508,7 @@ async function openForm(draft) {
       box.appendChild(ok);
       return;
     }
+    box.appendChild(wizBar(STEP));
     if (STEP === 1) {
       const s = document.createElement('div'); s.className = 'picksearch';
       const lb = document.createElement('label'); lb.className = 'fld'; lb.style.margin = '0';
@@ -455,8 +517,11 @@ async function openForm(draft) {
       inp.type = 'search'; inp.id = 'pq'; inp.placeholder = 'พิมพ์ชื่อของ เช่น ปากกา กระดาษ';
       inp.oninput = () => drawPickList(inp.value.trim());
       lb.appendChild(inp); s.appendChild(lb);
+      const cnt = document.createElement('p'); cnt.className = 'pcount'; cnt.id = 'pcount';
+      cnt.setAttribute('role', 'status');          // ประกาศแบบไม่ขัดจังหวะสิ่งที่กำลังอ่านอยู่
+      cnt.setAttribute('aria-live', 'polite');
       const list = document.createElement('div'); list.className = 'plist'; list.id = 'plist';
-      box.append(s, list);
+      box.append(s, cnt, list);
       PLIST = list;
       drawPickList('');
     } else {
@@ -467,9 +532,10 @@ async function openForm(draft) {
         const row = document.createElement('div'); row.className = 'prow picked';
         // ภาพย่อจากรายการสินค้าที่โหลดไว้แล้ว (CART เก็บแค่ id/ชื่อ/จำนวน)
         const src = ITEMS.find((i) => i.id === c.itemId);
-        const th = document.createElement('span'); th.className = 'ithumb'; th.textContent = '📦';
-        const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.appendChild(im);
-        if (src && src.hasImage) setItemImg(im, c.itemId).then(() => { if (!im.hidden) th.firstChild.textContent = ''; });
+        const th = document.createElement('span'); th.className = 'ithumb';
+        const ph = document.createElement('span'); ph.className = 'ph'; ph.appendChild(icon('package'));
+        const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.append(ph, im);
+        if (src && src.hasImage) setItemImg(im, c.itemId).then(() => { if (!im.hidden) ph.hidden = true; });
         const info = document.createElement('div'); info.className = 'info';
         const nm = document.createElement('b'); nm.textContent = c.name;
         const sm = document.createElement('small'); sm.textContent = 'หน่วย: ' + c.unit;
@@ -511,11 +577,12 @@ async function openForm(draft) {
       foot.appendChild(mkBtn('เสร็จแล้ว', 'btn-primary', closeModal));
       return;
     }
-    const count = document.createElement('span'); count.className = 'cartcount'; count.id = 'cartCount';
-    foot.appendChild(count);
     if (STEP === 1) {
       foot.appendChild(mkBtn('ปิด', 'btn-ghost', closeModal));
-      foot.appendChild(mkBtn('ถัดไป ›', 'btn-primary', () => {
+      // จำนวนอยู่ในปุ่มเลย — กดแล้วได้อะไรต่อเห็นชัดตั้งแต่ยังไม่กด
+      // และแถบล่างบนมือถือแคบมาก ไม่ต้องแย่งที่กับข้อความ "เลือกแล้ว n รายการ" อีกอัน
+      const label = CART.length ? 'ถัดไป (' + CART.length + ' รายการ) ›' : 'ถัดไป ›';
+      foot.appendChild(mkBtn(label, 'btn-primary', () => {
         if (!CART.length) return showErr(box, 'กรุณาเลือกของที่ต้องการเบิกอย่างน้อย 1 รายการ');
         STEP = 2; render(); paintFoot();
       }));
@@ -525,8 +592,8 @@ async function openForm(draft) {
       foot.appendChild(mkBtn('เก็บไว้ก่อน', 'btn-ghost', () => save(false)));
       foot.appendChild(mkBtn('ส่งให้คลัง', 'btn-primary', () => save(true)));
     }
-    paintCount();
   }
+  paintFootRef = paintFoot;   // ให้ตัวนับจำนวนสั่งวาดแถบปุ่มใหม่ได้จากนอกฟังก์ชันนี้
   function mkBtn(label, cls, fn) {
     const b = document.createElement('button');
     b.className = 'btn ' + cls; b.textContent = label;
@@ -537,7 +604,10 @@ async function openForm(draft) {
   async function save(submit) {
     const lines = CART.map((c) => ({ itemId: c.itemId, qty: c.qty }));
     if (!lines.length) return showErr(box, 'กรุณาเลือกของที่ต้องการเบิกอย่างน้อย 1 รายการ');
-    if (lines.some((l) => !(Number(l.qty) > 0))) return showErr(box, 'จำนวนของทุกรายการต้องมากกว่า 0');
+    // บอกชื่อของที่ผิดไปด้วย — ใบที่มี 5-6 รายการ ถ้าบอกแค่ "ทุกรายการต้องมากกว่า 0"
+    // คนต้องไล่ดูเองทีละบรรทัดว่าอันไหนเป็น 0
+    const bad = CART.find((c) => !(Number(c.qty) > 0));
+    if (bad) return showErr(box, 'ใส่จำนวนของ “' + bad.name + '” ให้มากกว่า 0 ก่อนส่ง');
     const body = { purpose: PURPOSE.trim(), needBy: dateToMs(NEEDBY), lines, submit };
     try {
       let no = EDITING && EDITING.no;
@@ -584,7 +654,7 @@ async function openReq(id) {
     const n = document.createElement('div');
     n.className = 'callout warn nextstep';
     const ic = document.createElement('span'); ic.className = 'ic';
-    ic.textContent = NEXT_ICON[d.status] || '👉';
+    ic.appendChild(icon(NEXT_ICON[d.status] || 'chevron'));
     const tx = document.createElement('div'); tx.className = 'tx';
     const lb = document.createElement('b'); lb.textContent = 'ขั้นต่อไป';
     const ac = document.createElement('span'); ac.className = 'act'; ac.textContent = NEXT_STEP[d.status];
@@ -648,7 +718,8 @@ async function openReq(id) {
     for (const a of d.approvals) {
       const ok = a.decision === 'approve';
       const p = document.createElement('div'); p.className = 'note-line' + (ok ? '' : ' bad');
-      const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = ok ? '✅' : '🚫';
+      const ic = document.createElement('span'); ic.className = 'ic';
+      ic.appendChild(icon(ok ? 'checkcirc' : 'ban'));
       const tx = document.createElement('div');
       const b = document.createElement('b');
       b.textContent = (ok ? 'จ่ายของแล้ว' : 'ปฏิเสธ') + ' โดย ' + a.approver;
@@ -681,7 +752,7 @@ function drawHeld(tags) {
   $('#nHeld').hidden = tags.length === 0;
   $('#nHeld').textContent = tags.length;
   if (!tags.length) {
-    box.appendChild(emptyBox('🔧', 'ไม่ได้ถือครุภัณฑ์ชิ้นไหนอยู่',
+    box.appendChild(emptyBox('wrench', 'ไม่ได้ถือครุภัณฑ์ชิ้นไหนอยู่',
       'ของที่ต้องคืน เช่น โน้ตบุ๊กหรือเครื่องมือ จะขึ้นที่นี่'));
     return;
   }

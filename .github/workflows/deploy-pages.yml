@@ -39,7 +39,7 @@ jobs:
       - name: ใส่เลขเวอร์ชันท้ายไฟล์ js/css กันแคชค้าง
         run: |
           V=${GITHUB_SHA::7}
-          sed -i -E "s/(common\.js|brand\.css|config\.js)\"/\1?v=$V\"/g" web/*.html
+          sed -i -E "s/(icons\.js|common\.js|brand\.css|config\.js)\"/\1?v=$V\"/g" web/*.html
           grep -o 'common\.js?v=[a-z0-9]*' web/app.html | head -1
 
       # หมายเหตุ: อย่าใส่ enablement: true — GITHUB_TOKEN ไม่มีสิทธิ์เปิด Pages เอง แล้วขั้นนี้จะล้มทั้ง job

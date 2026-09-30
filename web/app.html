@@ -27,18 +27,20 @@
   /* ปุ่มหลัก — สิ่งเดียวที่พนักงานส่วนใหญ่ต้องกด */
   .hero{
     display:flex; align-items:center; gap:16px; width:100%;
-    /* แสงนุ่ม ๆ ทับบนไล่สีแดงให้มีมิติ — วางไว้ "มุมบนขวา" ซึ่งมีแต่ลูกศร ไม่ใช่มุมซ้ายที่มีตัวหนังสือ
-       🔑 วัดแล้ว: ขาวบนแดงแบรนด์ = 4.80 ผ่านเกณฑ์ · แต่ถ้ามีแสงขาวทับ 22% เหลือ 4.02 ตกเกณฑ์ทันที
-       ดังนั้นแสงต้องไม่พาดผ่านข้อความ และคุมความเข้มไว้ที่ .14 */
-    background:
-      radial-gradient(90% 150% at 96% -40%, rgba(255,255,255,.14), transparent 55%),
-      linear-gradient(100deg,var(--brand),var(--brand-700));
+    /* เอาแสงวาบมุมบนขวาออก และเปลี่ยนเงาเรืองแดงเป็นเงากลาง
+       ของเดิมเป็นภาษาของหน้าโฆษณา (ไล่แสง + เรืองสี) ซึ่งบนเครื่องมือที่พนักงานเปิดทั้งวัน
+       อ่านเป็น "ป้ายโปรโมชัน" มากกว่า "ปุ่มทำงาน" · ตอนนี้เหลือไล่แดงเรียบ ๆ อย่างเดียว
+       🔑 ขาวบนแดงแบรนด์วัดได้ 4.80 ผ่านเกณฑ์พอดี — ห้ามเอาแสงขาวมาทับข้อความอีก
+          (ทับ 22% เมื่อไหร่เหลือ 4.02 ตกเกณฑ์ทันที) */
+    background:linear-gradient(100deg,var(--brand),var(--brand-700));
     color:#fff; border:0; border-radius:16px; padding:20px 22px; cursor:pointer;
     text-align:start; text-decoration:none; font:inherit;
-    box-shadow:0 2px 6px rgba(230,0,18,.22), 0 16px 34px -18px rgba(230,0,18,.95);
+    box-shadow:0 1px 3px rgba(24,20,22,.16), 0 14px 30px -18px rgba(24,20,22,.6);
     transition:transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease;
   }
-  .hero:hover{transform:translateY(-2px); box-shadow:0 16px 34px -14px rgba(230,0,18,.95)}
+  .hero:hover{transform:translateY(-2px); box-shadow:0 16px 32px -16px rgba(24,20,22,.55)}
+  /* ปุ่มนี้ไม่มี border จึงต้องใช้วงแหวนขาวเหมือนปุ่มหลักอื่น ๆ ไม่งั้นโฟกัสหายไปบนพื้นแดง */
+  .hero:focus-visible{outline:none; box-shadow:var(--ring-on-brand)}
   .hero:active{transform:translateY(0)}
   /* ไอคอนมีแผ่นรองโปร่งแสง — อ่านเป็น "ปุ่ม" ชัดขึ้นและไม่ลอยอยู่บนพื้นแดงเฉย ๆ */
   .hero .ic{
@@ -75,11 +77,14 @@
     font-variant-numeric:tabular-nums; display:flex; align-items:baseline; gap:5px; margin-top:1px;
   }
   .tile .v small{font-family:var(--font); font-size:12.5px; font-weight:400; color:var(--muted)}
-  /* มีอะไรต้องจัดการ = พื้นเตือน (กติกาเดียวกับการ์ดในหน้ารายงาน) */
-  .tile.attn{background:var(--warn-bg); border-color:#eddcb8}
+  /* มีอะไรต้องจัดการ — บอกด้วย "ตัวเลขกับไอคอน" ไม่ระบายพื้นการ์ดทั้งใบ
+     🔑 ของเดิมระบายพื้นเหลืองทั้งใบ · ผู้ดูแลคลังมักมีของค้างพร้อมกันทุกช่อง
+        (ใบรอจ่าย + ของใกล้หมด + ครุภัณฑ์เลยกำหนด) หน้าแรกจึงกลายเป็นผนังเหลืองทั้งแถบ
+        พอทุกช่องเตือนเท่ากันหมด ก็ไม่มีช่องไหนเด่นกว่ากัน = เตือนแล้วไม่ได้ผล
+        ตอนนี้พื้นการ์ดขาวเหมือนกันหมด ปล่อยให้ตัวเลขสีเข้มกับไอคอนเป็นตัวบอก */
+  .tile.attn{border-color:var(--line-strong)}
   .tile.attn .v{color:#7a4f04}
-  .tile.attn .k{color:#8a6a2a}
-  .tile.attn .ic{background:rgba(138,90,5,.13)}
+  .tile.attn .ic{background:var(--warn-bg); color:#7a4f04}
   /* ยอดเป็น 0 = ไม่มีอะไรค้าง · ทำให้เงียบลง สายตาจะได้ไปหยุดที่ตัวเลขที่ต้องจัดการจริง ๆ
      (ยังต้องแสดงอยู่ เพราะ "ไม่มีใบค้าง" ก็เป็นคำตอบที่คนเปิดหน้าอยากรู้) */
   .tile.zero .v{color:var(--muted)}
@@ -107,15 +112,21 @@
   .todo a:hover{background:var(--panel-2)}
   .todo .ic{
     flex:0 0 auto; width:42px; height:42px; border-radius:12px; font-size:20px; line-height:1;
-    background:rgba(255,255,255,.7); display:flex; align-items:center; justify-content:center;
+    /* เดิมเป็นขาวโปร่ง 70% ซึ่งออกแบบมาให้วางบนการ์ดที่มีสีพื้น
+       พอการ์ดเป็นขาวแล้วแผ่นรองจะกลืนหายไป ต้องใช้เทาอ่อนแทน */
+    background:var(--panel-2); color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
   }
   .todo .tx{flex:1; min-width:0}
   .todo .tx b{display:block; font-size:15.5px; font-weight:700}
   .todo .tx span{display:block; font-size:13.5px; color:var(--muted); margin-top:1px}
   .todo .go{color:var(--muted); font-size:18px}
-  .todo a.warn{background:var(--warn-bg); border-color:#eddcb8}
+  /* รายการนี้คือ "งานที่ต้องทำ" อยู่แล้ว ไม่จำเป็นต้องระบายพื้นทุกใบซ้ำอีก
+     เหลือระบายพื้นไว้ระดับเดียว คือใบที่ "เลยกำหนดแล้ว" ซึ่งควรสะดุดตากว่าเพื่อนจริง ๆ */
+  .todo a.warn .ic{background:var(--warn-bg); color:#7a4f04}
   .todo a.warn .tx b{color:#7a4f04}
   .todo a.bad{background:var(--bad-bg); border-color:#f3c9c5}
+  .todo a.bad .ic{background:rgba(179,37,26,.12); color:var(--bad)}
   .todo a.bad .tx b{color:var(--bad)}
 
   /* ใบเบิกล่าสุดของฉัน — ซ้าย: เลขที่ + เหตุผล · ขวา: สถานะ + ลูกศร
@@ -168,7 +179,7 @@
   </div>
 
   <a class="hero" href="request.html?new=1" id="hero">
-    <span class="ic">📝</span>
+    <span class="ic" id="heroIc"></span>
     <span class="t"><b>เบิกของ</b><span>เลือกของที่ต้องการ แล้วเดินไปรับที่คลัง</span></span>
     <span class="go" aria-hidden="true">›</span>
   </a>
@@ -192,15 +203,17 @@
 </main>
 
 <script src="config.js"></script>
+<script src="icons.js"></script>
 <script src="common.js"></script>
 <script>
 $('#topbar').innerHTML = topbarHTML();
+$('#heroIc').appendChild(icon('newdoc'));
 
 function todoItem(cls, ic, title, detail, href) {
   const a = document.createElement('a');
   a.href = href; if (cls) a.className = cls;
   a.innerHTML = '<span class="ic"></span><span class="tx"><b></b><span></span></span><span class="go" aria-hidden="true">›</span>';
-  $('.ic', a).textContent = ic;
+  $('.ic', a).appendChild(icon(ic));
   $('.tx b', a).textContent = title;
   $('.tx span', a).textContent = detail;
   return a;
@@ -212,7 +225,7 @@ function tile(k, v, unit, href, attn, ic) {
   a.className = 'tile' + (attn ? ' attn' : '') + (Number(v) ? '' : ' zero');
   if (href) a.href = href;
   const i = document.createElement('span'); i.className = 'ic'; i.setAttribute('aria-hidden', 'true');
-  i.textContent = ic || '•';
+  i.appendChild(icon(ic || 'package'));
   const tx = document.createElement('span'); tx.className = 'tx';
   const kk = document.createElement('span'); kk.className = 'k'; kk.textContent = k;
   const vv = document.createElement('span'); vv.className = 'v'; vv.textContent = num(v);
@@ -227,11 +240,11 @@ function drawTiles(d) {
   const box = $('#tiles'); box.innerHTML = '';
   const wh = ME.role === 'warehouse' || ME.role === 'admin';
   const pending = d.mine.filter((r) => r.status === 'pending').length;
-  box.appendChild(tile('ใบที่รอคลังจ่าย', pending, 'ใบ', 'request.html', pending > 0, '📋'));
-  box.appendChild(tile('ของที่ถืออยู่', d.held, 'ชิ้น', 'request.html#held', d.overdue > 0, '🔧'));
+  box.appendChild(tile('ใบที่รอคลังจ่าย', pending, 'ใบ', 'request.html', pending > 0, 'clipboard'));
+  box.appendChild(tile('ของที่ถืออยู่', d.held, 'ชิ้น', 'request.html#held', d.overdue > 0, 'wrench'));
   if (wh) {
-    box.appendChild(tile('รอฉันจ่ายของ', d.queue, 'ใบ', 'issue.html', d.queue > 0, '✅'));
-    box.appendChild(tile('ของใกล้หมด', d.low, 'รายการ', 'stock.html', d.low > 0, '📉'));
+    box.appendChild(tile('รอฉันจ่ายของ', d.queue, 'ใบ', 'issue.html', d.queue > 0, 'checkcirc'));
+    box.appendChild(tile('ของใกล้หมด', d.low, 'รายการ', 'stock.html', d.low > 0, 'down'));
   }
 }
 
@@ -239,14 +252,14 @@ function drawTodo(d) {
   const box = $('#todo'); box.innerHTML = '';
   const wh = ME.role === 'warehouse' || ME.role === 'admin';
   const od = d.assets.filter((t) => t.overdue);
-  if (od.length) box.appendChild(todoItem('bad', '⏰', `คืนครุภัณฑ์ ${od.length} ชิ้น`,
+  if (od.length) box.appendChild(todoItem('bad', 'clock', `คืนครุภัณฑ์ ${od.length} ชิ้น`,
     od.map((t) => t.item).join(' · ') + ' — เลยกำหนดคืนแล้ว', 'request.html#held'));
   if (wh) {
-    if (d.queue) box.appendChild(todoItem('warn', '✅', `จ่ายของ ${d.queue} ใบ`,
+    if (d.queue) box.appendChild(todoItem('warn', 'checkcirc', `จ่ายของ ${d.queue} ใบ`,
       'พนักงานส่งใบเบิกมารอแล้ว', 'issue.html'));
-    if (d.low) box.appendChild(todoItem('warn', '📉', `สั่งซื้อเพิ่ม ${d.low} รายการ`,
+    if (d.low) box.appendChild(todoItem('warn', 'down', `สั่งซื้อเพิ่ม ${d.low} รายการ`,
       d.lowNames.join(' · '), 'stock.html'));
-    if (d.heldOverdue) box.appendChild(todoItem('bad', '🔧', `ตามครุภัณฑ์คืน ${d.heldOverdue} ชิ้น`,
+    if (d.heldOverdue) box.appendChild(todoItem('bad', 'wrench', `ตามครุภัณฑ์คืน ${d.heldOverdue} ชิ้น`,
       'เลยกำหนดคืนแล้ว', 'assets.html'));
   }
   $('#secTodo').hidden = box.children.length === 0;
@@ -255,7 +268,7 @@ function drawTodo(d) {
 function drawMine(rows) {
   const box = $('#mine'); box.innerHTML = '';
   if (!rows.length) {
-    box.appendChild(emptyBox('📝', 'ยังไม่เคยเบิกของ',
+    box.appendChild(emptyBox('newdoc', 'ยังไม่เคยเบิกของ',
       'กดปุ่ม “เบิกของ” ด้านบนเพื่อเปิดใบแรก'));
     return;
   }
@@ -281,21 +294,21 @@ function drawMine(rows) {
 function drawMore() {
   const wh = ME.role === 'warehouse' || ME.role === 'admin';
   const links = [
-    { ic:'🔧', t:'ของที่ฉันถืออยู่', href:'request.html#held', show:true },
-    { ic:'✅', t:'อนุมัติและจ่ายของ', href:'issue.html',  show:wh },
-    { ic:'🏷️', t:'สินค้าและสต็อก',   href:'stock.html',  show:wh },
-    { ic:'🔍', t:'ครุภัณฑ์ในมือพนักงาน', href:'assets.html', show:wh },
-    { ic:'📊', t:'รายงานและงบประมาณ', href:'report.html', show:wh },
-    { ic:'👥', t:'ผู้ใช้และแผนก',     href:'admin.html',  show:ME.role === 'admin' },
-    { ic:'📘', t:'วิธีใช้ (คู่มือ)',    href:'guide.html',  show:true },
-    { ic:'📗', t:'คู่มือผู้ดูแลคลัง',   href:'guide-warehouse.html', show:wh },
+    { ic:'wrench', t:'ของที่ฉันถืออยู่', href:'request.html#held', show:true },
+    { ic:'checkcirc', t:'อนุมัติและจ่ายของ', href:'issue.html',  show:wh },
+    { ic:'tag', t:'สินค้าและสต็อก',   href:'stock.html',  show:wh },
+    { ic:'search', t:'ครุภัณฑ์ในมือพนักงาน', href:'assets.html', show:wh },
+    { ic:'chart', t:'รายงานและงบประมาณ', href:'report.html', show:wh },
+    { ic:'users', t:'ผู้ใช้และแผนก',     href:'admin.html',  show:ME.role === 'admin' },
+    { ic:'book', t:'วิธีใช้ (คู่มือ)',    href:'guide.html',  show:true },
+    { ic:'book', t:'คู่มือผู้ดูแลคลัง',   href:'guide-warehouse.html', show:wh },
   ].filter((l) => l.show);
   const box = $('#more'); box.innerHTML = '';
   for (const l of links) {
     const a = document.createElement('a');
     a.href = l.href;
     a.innerHTML = '<span class="ic"></span><span></span>';
-    $('.ic', a).textContent = l.ic;
+    $('.ic', a).appendChild(icon(l.ic));
     a.lastElementChild.textContent = l.t;
     box.appendChild(a);
   }

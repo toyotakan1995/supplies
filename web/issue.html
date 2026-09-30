@@ -84,6 +84,7 @@
 </main>
 
 <script src="config.js"></script>
+<script src="icons.js"></script>
 <script src="common.js"></script>
 <script>
 $('#topbar').innerHTML = topbarHTML();
@@ -129,8 +130,8 @@ function drawQueue() {
   const box = $('#queue'); box.innerHTML = '';
   if (!list.length) {
     box.appendChild(QUEUE.length
-      ? emptyBox('🔍', 'ไม่พบใบที่ตรงกับคำค้น', 'ลองค้นด้วยรหัสพนักงาน ชื่อ หรือเลขที่ใบ เช่น RQ-2608-001')
-      : emptyBox('☕', 'ยังไม่มีใครส่งใบเบิกมา', 'คิวว่าง — เมื่อมีพนักงานส่งใบ ใบจะเด้งขึ้นที่นี่และมีเลขบนกระดิ่ง'));
+      ? emptyBox('search', 'ไม่พบใบที่ตรงกับคำค้น', 'ลองค้นด้วยรหัสพนักงาน ชื่อ หรือเลขที่ใบ เช่น RQ-2608-001')
+      : emptyBox('coffee', 'ยังไม่มีใครส่งใบเบิกมา', 'คิวว่าง — เมื่อมีพนักงานส่งใบ ใบจะเด้งขึ้นที่นี่และมีเลขบนกระดิ่ง'));
     return;
   }
   for (const r of list) box.appendChild(card(r));
@@ -151,7 +152,7 @@ async function loadAll() {
   const d = await api('/api/requisitions?box=all' + (st ? '&status=' + st : ''));
   const box = $('#all'); box.innerHTML = '';
   if (!d.requisitions.length) {
-    box.appendChild(emptyBox('🗂️', 'ไม่มีใบเบิกที่ตรงกับตัวกรอง', 'ลองเปลี่ยนสถานะที่เลือกไว้ หรือดู "ทั้งหมด"'));
+    box.appendChild(emptyBox('folder', 'ไม่มีใบเบิกที่ตรงกับตัวกรอง', 'ลองเปลี่ยนสถานะที่เลือกไว้ หรือดู "ทั้งหมด"'));
     return;
   }
   for (const r of d.requisitions) box.appendChild(card(r));

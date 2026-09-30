@@ -75,8 +75,8 @@
       <button data-q="all">ทั้งหมด</button>
     </div>
     <span class="grow"></span>
-    <button class="btn btn-ghost" id="exMv">⬇ ประวัติสต็อก (CSV)</button>
-    <button class="btn btn-ghost" id="exRq">⬇ ใบเบิก (CSV)</button>
+    <button class="btn btn-ghost" id="exMv">ประวัติสต็อก (CSV)</button>
+    <button class="btn btn-ghost" id="exRq">ใบเบิก (CSV)</button>
   </div>
 
   <div class="kpis" id="kpis"></div>
@@ -122,7 +122,7 @@
     <div class="sec-h">
       <h2>ครุภัณฑ์คงค้างในมือพนักงาน</h2>
       <span class="grow"></span>
-      <button class="btn btn-ghost" id="exHeld">⬇ CSV</button>
+      <button class="btn btn-ghost" id="exHeld">CSV</button>
     </div>
     <div class="tblwrap"><table>
       <thead><tr><th>เลขครุภัณฑ์</th><th>อุปกรณ์</th><th>ผู้ถือครอง</th><th>แผนก</th><th>กำหนดคืน</th><th class="num">มูลค่า</th></tr></thead>
@@ -132,9 +132,12 @@
 </main>
 
 <script src="config.js"></script>
+<script src="icons.js"></script>
 <script src="common.js"></script>
 <script>
 $('#topbar').innerHTML = topbarHTML();
+// ปุ่มดาวน์โหลดทุกปุ่มใช้ไอคอนเดียวกัน — เดิมเป็นลูกศร ⬇ ตัวอักษร ซึ่งฟอนต์ไทยบางตัวไม่มี แล้วขึ้นเป็นกล่องเปล่า
+for (const id of ['exMv', 'exRq', 'exHeld']) $('#' + id).prepend(icon('download'));
 // ⚠️ ห้ามประกาศ ME ซ้ำที่นี่ — common.js ประกาศไว้แล้ว
 //    ประกาศซ้ำ = SyntaxError แล้วสคริปต์ทั้งหน้าไม่ทำงานเลย (หน้าโล่งโดยไม่มีข้อความบอก)
 
@@ -211,7 +214,7 @@ function cells(tr, vals) {
 
 function drawDept(rows) {
   const tb = $('#deptRows'); tb.innerHTML = '';
-  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', '📅')); return; }
+  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', 'calendar')); return; }
   const max = Math.max(...rows.map((r) => r.value), 1);
   for (const r of rows) {
     const tr = document.createElement('tr');
@@ -223,7 +226,7 @@ function drawDept(rows) {
 
 function drawPerson(rows) {
   const tb = $('#personRows'); tb.innerHTML = '';
-  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', '📅')); return; }
+  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', 'calendar')); return; }
   for (const r of rows) {
     const tr = document.createElement('tr');
     cells(tr, [`${r.name} (${r.emp_id})`, r.dept || '—', { num: num(r.reqs) }, { num: money(r.value) }]);
@@ -233,7 +236,7 @@ function drawPerson(rows) {
 
 function drawItems(rows) {
   const tb = $('#itemRows'); tb.innerHTML = '';
-  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', '📅')); return; }
+  if (!rows.length) { tb.appendChild(emptyRow(4, 'ยังไม่มีการเบิกในช่วงนี้', 'ลองขยายช่วงวันที่ด้านบน หรือกดปุ่ม “ทั้งหมด”', 'calendar')); return; }
   for (const r of rows) {
     const tr = document.createElement('tr');
     cells(tr, [r.code, r.name, { num: num(r.qty) + ' ' + r.unit }, { num: money(r.value) }]);
@@ -243,7 +246,7 @@ function drawItems(rows) {
 
 function drawHeld(rows) {
   const tb = $('#heldRows'); tb.innerHTML = '';
-  if (!rows.length) { tb.appendChild(emptyRow(6, 'ไม่มีครุภัณฑ์อยู่ในมือใคร', 'ของทุกชิ้นอยู่ในคลังครบ', '✅')); return; }
+  if (!rows.length) { tb.appendChild(emptyRow(6, 'ไม่มีครุภัณฑ์อยู่ในมือใคร', 'ของทุกชิ้นอยู่ในคลังครบ', 'checkcirc')); return; }
   for (const r of rows) {
     const tr = document.createElement('tr');
     const due = r.due_at ? dOnly(r.due_at) + (r.overdue ? ' · เลยกำหนด' : '') : 'ไม่มีกำหนด';

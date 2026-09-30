@@ -38,7 +38,7 @@
   <div class="bar">
     <input type="search" id="q" placeholder="ค้นหาเลขครุภัณฑ์ ชื่ออุปกรณ์ ชื่อพนักงาน หรือแผนก">
     <span class="grow"></span>
-    <button class="btn btn-ghost" id="btnRemind">📣 เตือนคนที่เลยกำหนดคืน</button>
+    <button class="btn btn-ghost" id="btnRemind">เตือนคนที่เลยกำหนดคืน</button>
   </div>
 
   <div class="tblwrap">
@@ -53,14 +53,16 @@
 </main>
 
 <script src="config.js"></script>
+<script src="icons.js"></script>
 <script src="common.js"></script>
 <script>
 $('#topbar').innerHTML = topbarHTML();
+$('#btnRemind').prepend(icon('megaphone'));
 let TAGS = [];
 
 function draw() {
   const tb = $('#rows'); tb.innerHTML = '';
-  if (!TAGS.length) { tb.appendChild(emptyRow(6, 'ตอนนี้ไม่มีครุภัณฑ์อยู่ในมือใครเลย', 'ของทุกชิ้นอยู่ในคลังครบ — เมื่อมีการจ่ายครุภัณฑ์ออกไป รายการจะขึ้นที่นี่', '✅')); return; }
+  if (!TAGS.length) { tb.appendChild(emptyRow(6, 'ตอนนี้ไม่มีครุภัณฑ์อยู่ในมือใครเลย', 'ของทุกชิ้นอยู่ในคลังครบ — เมื่อมีการจ่ายครุภัณฑ์ออกไป รายการจะขึ้นที่นี่', 'checkcirc')); return; }
   for (const t of TAGS) {
     const tr = document.createElement('tr');
     if (t.overdue) tr.className = 'over';

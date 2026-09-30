@@ -42,8 +42,29 @@
   --font:"Sarabun","Leelawadee UI","Segoe UI",system-ui,sans-serif;
   --font-head:"Prompt","Sarabun","Leelawadee UI","Segoe UI",system-ui,sans-serif;
   --ease:cubic-bezier(.22,.9,.28,1);
-  /* วงแหวนโฟกัสชุดเดียวทั้งระบบ — เดิมช่องกรอกมีแต่ปุ่มไม่มี */
-  --ring:0 0 0 3px rgba(230,0,18,.16);
+  /* ---------- สีของ "การโต้ตอบ" ----------
+     แยกออกจากสีแบรนด์โดยตั้งใจ · กติกาใหม่ของระบบคือ
+       แดง  = ตัวตนบริษัท + ปุ่มหลัก 1 ปุ่มต่อหน้า + ของที่ต้องรีบ/อันตราย
+       ถ่าน = สิ่งที่กำลังโฟกัส · สิ่งที่เลือกไว้ · ขอบตอนกำลังใช้งาน
+
+     ทำไมต้องแยก: ระบบนี้พนักงานเปิดทั้งวัน เดิมทุกอย่างที่แตะแล้วขึ้นแดงหมด
+     (กด Tab ก็แดง เลือกวันที่ก็แดง เลือกตัวเลือกในดรอปดาวน์ก็แดง)
+     พอแดงอยู่ทุกที่ ของที่ "ต้องรีบจริง ๆ" อย่างใบเบิกที่รอจ่ายก็ไม่เด่นอีกต่อไป
+     และสีแรงเต็มจอตลอดวันทำให้ล้าตา
+
+     เลือกถ่าน #2f3238 เพราะเป็นสีเดียวกับปลายแถบหัวที่มีอยู่แล้ว
+     จึงไม่ใช่สีแปลกปลอม และไม่ชนกับเทาอุ่นของพื้นหลังแบบเทาเย็นล้วน */
+  --accent:#2f3238;
+  --accent-dark:#1f2227;
+  --accent-soft:#eceff3;      /* พื้นของแถวที่ถูกเลือก */
+
+  /* วงแหวนโฟกัสชุดเดียวทั้งระบบ — เดิมช่องกรอกมีแต่ปุ่มไม่มี
+     ⚠️ วงแหวนโปร่งแสงวัดได้ไม่ถึง 3:1 ไม่ว่าจะตั้ง alpha เท่าไหร่ (วัดแล้ว .45 ยังได้แค่ 2.53)
+        ตัวที่ทำให้ "เห็นว่าโฟกัสอยู่ตรงไหน" จริง ๆ คือ border ทึบที่มากับมันเสมอ
+        วงแหวนเป็นแค่ตัวช่วยให้สะดุดตา ห้ามใช้เดี่ยว ๆ โดยไม่มี border */
+  --ring:0 0 0 3px rgba(47,50,56,.22);
+  /* ปุ่มแดงใช้วงแหวนขาว — วงแหวนถ่านบนพื้นแดงมองแทบไม่เห็น */
+  --ring-on-brand:0 0 0 3px rgba(255,255,255,.9), 0 0 0 5px rgba(47,50,56,.55);
 }
 
 *{box-sizing:border-box}
@@ -53,12 +74,26 @@ h1,h2,h3,h4{font-family:var(--font-head)}
 body{
   /* ไล่เฉดจาง ๆ ใต้แถบหัวสีเข้ม — ให้เนื้อหาดูวางอยู่บนพื้น ไม่ใช่ลอยบนสีเทาแบน ๆ
      จบที่ --paper ภายใน 340px ที่เหลือของหน้าเป็นสีเดียวสม่ำเสมอ */
-  background:linear-gradient(180deg,#efebed 0,var(--paper) 340px) no-repeat var(--paper);
+  /* ไล่เฉดบางลงกว่าเดิม — ของเดิมไล่จาก #efebed ซึ่งอมชมพูตามแดงแบรนด์
+     เครื่องมือที่ใช้ทั้งวันควรเป็นพื้นเรียบ ๆ ไม่ดึงสายตาแข่งกับเนื้อหา */
+  background:linear-gradient(180deg,#f1eff0 0,var(--paper) 220px) no-repeat var(--paper);
   color:var(--ink);
   font-family:var(--font); font-size:15.5px; line-height:1.65;
   -webkit-font-smoothing:antialiased;
 }
-:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+
+/* ---------- ไอคอน (icons.js) ----------
+   ขนาดเป็น em เสมอ → ไอคอนโตตาม font-size ของกล่องที่ใส่มันไว้
+   กฎ font-size เดิมของ .ic ทุกจุดจึงยังคุมขนาดได้เหมือนตอนที่ยังเป็นอิโมจิ
+   vertical-align ดึงลงนิดหน่อยให้กึ่งกลางไอคอนตรงกับกึ่งกลางตัวอักษรไทย
+   (ตัวอักษรไทยมีสระบน-ล่าง กล่องตัวอักษรจึงสูงกว่าละติน ถ้าใช้ middle จะลอย) */
+svg.i{width:1.15em; height:1.15em; flex:0 0 auto; vertical-align:-.2em}
+svg.i.lg{width:1.45em; height:1.45em}
+svg.i.sm{width:1em; height:1em}
+/* ปุ่มที่มีไอคอนนำหน้าข้อความ — ระยะห่างเท่ากันทุกปุ่มทั้งระบบ */
+.btn svg.i{margin-inline-end:7px; vertical-align:-.22em}
+.btn svg.i:only-child{margin-inline-end:0}
 
 /* หนึ่งจังหวะเคลื่อนไหวของทั้งระบบ — เนื้อหาลอยขึ้นตอนหน้าพร้อม
    ไม่ใส่ทีละส่วนให้กระพริบกันเอง · แถบหัว/แถบล่างไม่ขยับ (เป็นโครงหน้า) */
@@ -255,16 +290,23 @@ a.card{display:block; text-decoration:none; color:inherit;
   background:var(--panel-2); color:var(--ink); white-space:nowrap;
   transition:background .18s ease, transform .12s ease, box-shadow .2s ease, border-color .18s ease;
 }
-.btn:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--brand)}
+.btn:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
 .btn:hover{background:#eceef3}
 .btn:active{transform:translateY(1px)}
 .btn:disabled{opacity:.5; cursor:not-allowed; transform:none}
 .btn-primary{
   background:linear-gradient(100deg,var(--brand),var(--brand-700)); color:#fff; font-weight:700;
-  border-color:transparent; box-shadow:0 2px 4px rgba(230,0,18,.18), 0 12px 24px -14px rgba(230,0,18,.85);
+  /* เงาเป็นสีกลาง ไม่ใช่เรืองแดง — เรืองสีเป็นภาษาของแอปผู้บริโภค
+     เครื่องมือในองค์กรใช้เงากลาง ๆ เหมือนการ์ดอื่นในหน้า ปุ่มจึงดูอยู่ในระนาบเดียวกัน */
+  border-color:transparent; box-shadow:0 1px 2px rgba(24,20,22,.14), 0 10px 22px -14px rgba(24,20,22,.55);
 }
-.btn-primary:active{transform:translateY(1px); box-shadow:0 1px 2px rgba(230,0,18,.2)}
+.btn-primary:active{transform:translateY(1px); box-shadow:0 1px 2px rgba(24,20,22,.18)}
 .btn-primary:hover{filter:brightness(1.06); background:linear-gradient(100deg,var(--brand),var(--brand-700))}
+/* 🐞 ปุ่มหลักเคย "ไม่มีวงแหวนโฟกัสให้เห็นเลย" — .btn-primary ตั้ง border-color:transparent
+      แล้ว .btn:focus-visible ไปใส่ border สีแดงทับบนพื้นปุ่มที่แดงอยู่แล้ว = มองไม่เห็น
+      คนที่ใช้คีย์บอร์ดกด Tab มาถึงปุ่ม "ส่งให้คลัง" แล้วไม่รู้ว่าตัวเองอยู่ตรงไหน
+      แก้เป็นวงแหวนขาวรัดตัวปุ่ม (ขาวบนแดง = 4.80) ซ้อนด้วยวงถ่านด้านนอกให้เห็นบนพื้นขาวด้วย */
+.btn-primary:focus-visible{outline:none; border-color:transparent; box-shadow:var(--ring-on-brand)}
 .btn-ghost{background:transparent; border-color:var(--line); color:var(--ink-soft)}
 .btn-ghost:hover{background:var(--panel-2)}
 
@@ -281,6 +323,9 @@ a.card{display:block; text-decoration:none; color:inherit;
 /* เส้นขอบในบาง ๆ กันรูปพื้นขาวกลืนไปกับการ์ด (สินค้าสำนักงานส่วนใหญ่ถ่ายบนพื้นขาว) */
 .ithumb{box-shadow:inset 0 0 0 1px rgba(27,29,34,.05)}
 .ithumb img[hidden]{display:none}
+/* ไอคอนแทนที่ตอนยังไม่มีรูป — ขนาดตาม font-size ของกรอบ จึงโตตามทุกขนาดของ .ithumb เอง */
+.ithumb .ph{display:flex; align-items:center; justify-content:center; opacity:.55}
+.ithumb .ph[hidden]{display:none}
 .ithumb.lg{width:60px; height:60px; border-radius:11px; font-size:24px}
 
 /* ตัวเลือกรูปในฟอร์มเพิ่ม/แก้ไขสินค้า */
@@ -299,7 +344,15 @@ input:not([type=checkbox]):not([type=radio]), select, textarea{
   width:100%; padding:10px 13px; border-radius:10px;
   border:1px solid var(--line); background:#fff; color:var(--ink);
 }
-input:focus, select:focus, textarea:focus{border-color:var(--brand); outline:none; box-shadow:0 0 0 3px rgba(230,0,18,.12)}
+/* 🐞 ต้องเขียน :not() ซ้ำในตัวเลือกนี้ด้วย ไม่งั้น "ขอบตอนโฟกัส" ไม่เคยขึ้นเลย
+      กฎพื้นฐานข้างบนคือ `input:not([type=checkbox]):not([type=radio])` น้ำหนัก 0-3-1
+      และตั้ง border แบบย่อ (รวมสีขอบ) ไว้ · ส่วน `input:focus` เฉย ๆ หนักแค่ 0-1-1 จึงแพ้
+      ผลคือช่องกรอกมีแต่เงาจาง ๆ ตอนโฟกัส ซึ่งวัดได้ไม่ถึง 3:1 — คนที่ใช้คีย์บอร์ด
+      แทบมองไม่ออกว่าเคอร์เซอร์อยู่ช่องไหน (เป็นมาตั้งแต่ตอนที่ยังใช้สีแดง ไม่ใช่ของใหม่)
+      ขอบทึบ #2f3238 บนขาววัดได้ 12.85 ผ่านสบาย */
+input:not([type=checkbox]):not([type=radio]):focus, select:focus, textarea:focus{
+  border-color:var(--accent); outline:none; box-shadow:0 0 0 3px rgba(47,50,56,.14);
+}
 
 /* ---------- ป้ายสถานะ ---------- */
 .pill{
@@ -411,9 +464,9 @@ a.noti:hover{background:var(--panel-2)}
   transition:background .16s ease, border-color .16s ease, color .16s ease;
 }
 .rowbtn:hover{background:var(--panel-2); border-color:var(--line-strong); color:var(--ink)}
-.rowbtn:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--brand)}
-.rowbtn.pri{border-color:#f0c8c4; color:var(--brand-700); font-weight:700}
-.rowbtn.pri:hover{background:#fff2f3; border-color:var(--brand); color:var(--brand-700)}
+.rowbtn:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
+.rowbtn.pri{border-color:var(--line-strong); color:var(--accent); font-weight:700}
+.rowbtn.pri:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent)}
 
 /* ---------- กล่องซ้อน ---------- */
 .ov{position:fixed; inset:0; z-index:60; background:rgba(20,22,28,.5);
@@ -466,6 +519,12 @@ a.noti:hover{background:var(--panel-2)}
 .merr{background:var(--bad-bg); color:var(--bad); border:1px solid #f3c9c5; border-radius:9px;
       padding:10px 13px; font-size:14px; margin-bottom:14px}
 .merr[hidden]{display:none}
+/* โฟกัสเด้งมาที่ข้อความผิดพลาดเอง — ไม่ต้องมีวงแหวนซ้ำกับสีแดงของกล่องที่เห็นชัดอยู่แล้ว */
+.merr:focus{outline:none}
+.merr:focus-visible{outline:2px solid var(--bad); outline-offset:2px}
+/* ช่องที่กรอกผิด — ขอบแดงบอกตำแหน่ง ไม่ต้องไล่อ่านทั้งฟอร์มว่าตรงไหนพัง */
+[aria-invalid=true]{border-color:var(--bad) !important}
+[aria-invalid=true]:focus{box-shadow:0 0 0 3px rgba(179,37,26,.16) !important}
 
 /* ---------- แท็บ ---------- */
 .tabs{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap}
@@ -476,7 +535,7 @@ a.noti:hover{background:var(--panel-2)}
   transition:background .16s ease, border-color .16s ease, color .16s ease;
 }
 .tabs button:hover{background:var(--panel-2); border-color:var(--line-strong); color:var(--ink)}
-.tabs button:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--brand)}
+.tabs button:focus-visible{outline:none; box-shadow:var(--ring); border-color:var(--accent)}
 .tabs button[aria-selected=true]:hover{background:#1f2229; color:#fff}
 .tabs button[aria-selected=true]{background:#2b2e36; border-color:#2b2e36; color:#fff; font-weight:700}
 .tabs .n{
@@ -506,7 +565,7 @@ a.noti:hover{background:var(--panel-2)}
   transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
 }
 .csel-btn:hover{border-color:var(--muted)}
-.csel-btn[aria-expanded=true]{border-color:var(--brand); box-shadow:0 0 0 3px rgba(230,0,18,.12)}
+.csel-btn[aria-expanded=true]{border-color:var(--accent); box-shadow:0 0 0 3px rgba(47,50,56,.14)}
 .csel-btn .lbl{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .csel-btn .lbl.ph{color:var(--muted)}
 .csel-btn .car{
@@ -532,8 +591,9 @@ a.noti:hover{background:var(--panel-2)}
   padding:9px 11px; border:0; border-radius:9px; background:none; color:var(--ink);
 }
 .csel-opt:hover, .csel-opt.cur{background:var(--panel-2)}
-.csel-opt[aria-selected=true]{background:#fdeef0; color:var(--brand-700); font-weight:700}
-.csel-opt .tick{flex:0 0 auto; width:16px; text-align:center; color:var(--brand-700); opacity:0}
+.csel-opt[aria-selected=true]{background:var(--accent-soft); color:var(--ink); font-weight:700}
+.csel-opt .tick{flex:0 0 auto; width:16px; color:var(--accent); opacity:0;
+                display:flex; align-items:center; justify-content:center}
 .csel-opt[aria-selected=true] .tick{opacity:1}
 .csel-opt:disabled{opacity:.45; cursor:not-allowed}
 
@@ -546,7 +606,7 @@ a.noti:hover{background:var(--panel-2)}
   border:1px solid var(--line-strong); background:#fff; color:var(--ink);
 }
 .dpick-btn:hover{border-color:var(--muted)}
-.dpick-btn[aria-expanded=true]{border-color:var(--brand); box-shadow:0 0 0 3px rgba(230,0,18,.12)}
+.dpick-btn[aria-expanded=true]{border-color:var(--accent); box-shadow:0 0 0 3px rgba(47,50,56,.14)}
 .dpick-btn .lbl{flex:1; min-width:0}
 .dpick-btn .lbl.ph{color:var(--muted)}
 .dpick-btn .ic{flex:0 0 auto; font-size:16px; opacity:.75}
@@ -587,8 +647,8 @@ a.noti:hover{background:var(--panel-2)}
 .cal-grid button:hover{background:var(--panel-2)}
 .cal-grid button.out{color:var(--line-strong)}
 .cal-grid button.today{box-shadow:inset 0 0 0 1.5px var(--line-strong); font-weight:700}
-.cal-grid button.sel{background:var(--brand); color:#fff; font-weight:700}
-.cal-grid button.sel:hover{background:var(--brand-700)}
+.cal-grid button.sel{background:var(--accent); color:#fff; font-weight:700}
+.cal-grid button.sel:hover{background:var(--accent-dark)}
 .cal-foot{display:flex; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line)}
 .cal-foot button{
   flex:1; min-height:40px; border:1px solid var(--line); border-radius:9px; cursor:pointer;
@@ -602,7 +662,7 @@ a.noti:hover{background:var(--panel-2)}
   font:inherit; font-size:14.5px; background:#fff; color:var(--ink);
 }
 .cal-months button:hover{background:var(--panel-2)}
-.cal-months button.sel{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:700}
+.cal-months button.sel{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700}
 
 /* ---------- ติ๊กถูก ---------- */
 input[type=checkbox].chk{

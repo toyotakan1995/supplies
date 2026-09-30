@@ -72,7 +72,7 @@
       <button class="chip" data-kind=""           aria-pressed="true">ทั้งหมด</button>
       <button class="chip" data-kind="consumable" aria-pressed="false">ของสิ้นเปลือง</button>
       <button class="chip" data-kind="asset"      aria-pressed="false">ครุภัณฑ์</button>
-      <button class="chip alarm" id="chipLow"     aria-pressed="false">⚠️ เฉพาะที่ใกล้หมด</button>
+      <button class="chip alarm" id="chipLow"     aria-pressed="false"><span id="chipLowIc"></span>เฉพาะที่ใกล้หมด</button>
     </div>
     <span class="grow"></span>
     <button class="btn btn-ghost" id="addCat">+ หมวดหมู่</button>
@@ -93,9 +93,11 @@
 </main>
 
 <script src="config.js"></script>
+<script src="icons.js"></script>
 <script src="common.js"></script>
 <script>
 $('#topbar').innerHTML = topbarHTML();
+$('#chipLowIc').appendChild(icon('warn'));
 
 let ITEMS = [], CATS = [], FILTER = { q:'', kind:'', low:false };
 
@@ -108,7 +110,7 @@ function drawRows() {
       ITEMS.length ? 'ไม่มีสินค้าที่ตรงกับตัวกรอง' : 'ยังไม่มีสินค้าในระบบ',
       ITEMS.length ? 'ลองเปลี่ยนคำค้นหรือกดชิป “ทั้งหมด”'
                    : 'เริ่มจากกด “+ เพิ่มสินค้า” คีย์รายการที่มีอยู่บนชั้น แล้วกด “รับเข้า” เพื่อบันทึกยอดตั้งต้น',
-      ITEMS.length ? '🔍' : '📦'));
+      ITEMS.length ? 'search' : 'package'));
     return;
   }
   for (const it of list) {
@@ -120,9 +122,10 @@ function drawRows() {
     // ชื่อ + ภาพย่อ — ผู้ดูแลคลังกวาดตาหาของบนชั้นจากรูปเร็วกว่าอ่านชื่อทีละบรรทัด
     const c2 = document.createElement('td'); c2.className = 'nm';
     const wrap = document.createElement('div'); wrap.className = 'nmwrap';
-    const th = document.createElement('span'); th.className = 'ithumb'; th.textContent = '📦';
-    const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.appendChild(im);
-    if (it.hasImage) setItemImg(im, it.id).then(() => { if (!im.hidden) th.firstChild.textContent = ''; });
+    const th = document.createElement('span'); th.className = 'ithumb';
+    const ph = document.createElement('span'); ph.className = 'ph'; ph.appendChild(icon('package'));
+    const im = document.createElement('img'); im.alt = ''; im.hidden = true; th.append(ph, im);
+    if (it.hasImage) setItemImg(im, it.id).then(() => { if (!im.hidden) ph.hidden = true; });
     const tx = document.createElement('div'); tx.className = 'nmtx';
     tx.textContent = it.name;
     const s = document.createElement('small'); s.textContent = it.category || 'ไม่ระบุหมวดหมู่'; tx.appendChild(s);
@@ -221,7 +224,7 @@ function openItemForm(item) {
   const it = item || { kind:'consumable', unit:'ชิ้น', reorderPoint:0, unitCost:0 };
   const box = form(`
     <div class="imgpick">
-      <span class="ithumb" id="imgBox">📦<img id="imgPrev" alt="" hidden></span>
+      <span class="ithumb" id="imgBox"><span class="ph"></span><img id="imgPrev" alt="" hidden></span>
       <span class="btns">
         <button type="button" class="btn" id="imgPick">เลือกรูปสินค้า</button>
         <button type="button" class="btn btn-ghost" id="imgDel" hidden>ลบรูป</button>
@@ -278,18 +281,20 @@ function openItemForm(item) {
   let pendingImg = null;        // Blob ที่ย่อแล้ว รอส่ง
   let removeImg = false;        // กด "ลบรูป" ไว้ รอยืนยันตอนบันทึก
   const prev = $('#imgPrev', box), imgBox = $('#imgBox', box), delBtn = $('#imgDel', box);
+  const imgPh = $('.ph', imgBox);
+  imgPh.appendChild(icon('package'));
   const showPrev = (url) => {
     prev.src = url; prev.hidden = false;
-    imgBox.firstChild.textContent = '';       // ซ่อนไอคอนกล่องเมื่อมีรูปจริง
+    imgPh.hidden = true;                      // ซ่อนไอคอนแทนที่เมื่อมีรูปจริงแล้ว
     delBtn.hidden = false;
   };
   const clearPrev = () => {
     prev.removeAttribute('src'); prev.hidden = true;
-    imgBox.firstChild.textContent = '📦';
+    imgPh.hidden = false;
     delBtn.hidden = true;
   };
   if (item && item.hasImage) setItemImg(prev, item.id).then(() => {
-    if (!prev.hidden) { imgBox.firstChild.textContent = ''; delBtn.hidden = false; }
+    if (!prev.hidden) { imgPh.hidden = true; delBtn.hidden = false; }
   });
   $('#imgPick', box).onclick = () => $('#imgFile', box).click();
   $('#imgFile', box).onchange = async (e) => {
@@ -454,7 +459,7 @@ async function openDetail(it) {
       if (tag.status !== 'in_use') e.appendChild(rowBtn('เปลี่ยนสถานะ', '', () => openTagStatus(tag)));
       tr.append(a, b, c, e); tb.appendChild(tr);
     }
-    if (!d.tags.length) tb.appendChild(emptyRow(4, 'ยังไม่มีเลขครุภัณฑ์', 'กด “รับเข้า” แล้วใส่เลขครุภัณฑ์ทีละชิ้น ระบบจะติดตามว่าแต่ละชิ้นอยู่กับใคร', '🏷️'));
+    if (!d.tags.length) tb.appendChild(emptyRow(4, 'ยังไม่มีเลขครุภัณฑ์', 'กด “รับเข้า” แล้วใส่เลขครุภัณฑ์ทีละชิ้น ระบบจะติดตามว่าแต่ละชิ้นอยู่กับใคร', 'tag'));
     t.appendChild(tb); sb.appendChild(t); box.appendChild(sb);
   }
 
@@ -472,13 +477,13 @@ async function openDetail(it) {
     ].forEach((v, i) => { const td = document.createElement('td'); if (i === 2 || i === 3) td.className = 'num'; td.textContent = v; tr.appendChild(td); });
     tb2.appendChild(tr);
   }
-  if (!d.movements.length) tb2.appendChild(emptyRow(6, 'ยังไม่มีความเคลื่อนไหว', 'ทุกครั้งที่รับเข้า จ่ายออก หรือปรับยอด จะมีบรรทัดบันทึกไว้ที่นี่', '📈'));
+  if (!d.movements.length) tb2.appendChild(emptyRow(6, 'ยังไม่มีความเคลื่อนไหว', 'ทุกครั้งที่รับเข้า จ่ายออก หรือปรับยอด จะมีบรรทัดบันทึกไว้ที่นี่', 'history'));
   t2.appendChild(tb2); sb2.appendChild(t2); box.appendChild(sb2);
 
   // ลบได้เฉพาะรายการที่ยังไม่มีอะไรผูกอยู่ (เซิร์ฟเวอร์เป็นคนตัดสิน ส่งเหตุผลมาใน d.deleteBlock)
   // มีประวัติแล้วให้ "ปิดใช้งาน" ที่หน้าแก้ไขแทน — ประวัติเก่าจะได้ยังชี้กลับมาที่รายการนี้ได้
   const btns = [{ label:'ปิด', onClick: closeModal }];
-  if (!d.deleteBlock) btns.push({ label:'🗑️ ลบรายการนี้', danger:true, onClick: () => { closeModal(); openDeleteItem(item); } });
+  if (!d.deleteBlock) btns.push({ label:'ลบรายการนี้', icon:'trash', danger:true, onClick: () => { closeModal(); openDeleteItem(item); } });
   btns.push({ label:'แก้ไขข้อมูลสินค้า', primary:true, onClick: () => { closeModal(); openItemForm(item); } });
   openModal(item.name, box, btns, true);
 }

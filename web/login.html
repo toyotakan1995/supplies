@@ -15,8 +15,8 @@
   body{
     display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:24px;
     background:
-      radial-gradient(680px 340px at 12% -8%, rgba(230,0,18,.10), transparent 62%),
-      radial-gradient(560px 300px at 105% 4%, rgba(230,0,18,.07), transparent 60%),
+      radial-gradient(680px 340px at 12% -8%, rgba(230,0,18,.07), transparent 62%),
+      radial-gradient(560px 300px at 105% 4%, rgba(230,0,18,.05), transparent 60%),
       var(--paper);
   }
   .login{width:100%; max-width:392px}
@@ -26,9 +26,12 @@
   .head .mk{
     width:66px; height:66px; margin:0 auto 15px; border-radius:20px; background:#fff;
     display:flex; align-items:center; justify-content:center;
-    box-shadow:0 14px 28px -16px rgba(230,0,18,.5), 0 0 0 1px rgba(230,0,18,.08);
+    /* เงากลาง ไม่ใช่เรืองแดง — เรืองสีรอบโลโก้อ่านเป็นเอฟเฟกต์ ไม่ใช่ป้ายบริษัท */
+    box-shadow:0 14px 28px -16px rgba(27,29,34,.42), 0 0 0 1px rgba(27,29,34,.06);
   }
   .head .mk img{width:40px; height:40px}
+  /* ไอคอนนำหน้าลิงก์ในเนื้อความต้องมีช่องไฟ ไม่งั้นติดตัวอักษรตัวแรก */
+  .guidelink svg.i{margin-inline-end:6px; vertical-align:-.2em}
   .head h1{font-size:23px; font-weight:700; margin:0; letter-spacing:-.01em}
   /* ตัวอักษรบน "พื้นที่มีสีแดงจาง" ต้องเข้มกว่าปกติ — --muted บนพื้นที่ผสมแดงวัดได้ 3.60 ตกเกณฑ์ */
   .head p{color:var(--ink-soft); font-size:14.5px; margin:4px 0 0}
@@ -63,13 +66,15 @@
     </label>
     <button class="btn btn-primary" id="go" style="width:100%">เข้าสู่ระบบ</button>
     <p class="note">ใช้<b> รหัสพนักงานและรหัสผ่านเดียวกับระบบใบสำคัญจ่าย</b><br>ลืมรหัสผ่าน ติดต่อผู้ดูแลระบบ<br>
-      <a href="guide.html" style="color:var(--brand-700); font-weight:700">📘 ดูวิธีใช้ (มีรูปประกอบ)</a></p>
+      <a href="guide.html" class="guidelink" style="color:var(--brand-700); font-weight:700">ดูวิธีใช้ (มีรูปประกอบ)</a></p>
   </form>
 </div>
 
+<script src="icons.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const err = $('#err');
+$('.guidelink').prepend(icon('book'));
 
 function showErr(msg){ err.textContent = msg; err.hidden = false; }
 

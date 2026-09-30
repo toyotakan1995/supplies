@@ -95,6 +95,7 @@
 </main>
 
 <script src="config.js"></script>
+<script src="icons.js"></script>
 <script src="common.js"></script>
 <script>
 $('#topbar').innerHTML = topbarHTML();
@@ -126,7 +127,7 @@ for (const b of $$('.tabs button')) {
 /* ---------- พนักงาน ---------- */
 function drawUsers() {
   const tb = $('#uRows'); tb.innerHTML = '';
-  if (!USERS.length) { tb.appendChild(emptyRow(5, 'ไม่พบพนักงานที่ตรงกับคำค้น', 'ค้นได้ด้วยรหัสพนักงาน ชื่อ หรือชื่อแผนก', '🔍')); return; }
+  if (!USERS.length) { tb.appendChild(emptyRow(5, 'ไม่พบพนักงานที่ตรงกับคำค้น', 'ค้นได้ด้วยรหัสพนักงาน ชื่อ หรือชื่อแผนก', 'search')); return; }
   for (const u of USERS) {
     const tr = document.createElement('tr');
     if (!u.active) tr.className = 'off';
@@ -205,7 +206,7 @@ async function loadAudit() {
   try {
     const d = await api('/api/admin/audit?limit=200');
     const tb = $('#aRows'); tb.innerHTML = '';
-    if (!d.rows.length) { tb.appendChild(emptyRow(5, 'ยังไม่มีประวัติการใช้งาน', 'ระบบจะบันทึกทุกครั้งที่มีการจ่ายของ รับคืน หรือแก้สิทธิ์ผู้ใช้', '🕘')); return; }
+    if (!d.rows.length) { tb.appendChild(emptyRow(5, 'ยังไม่มีประวัติการใช้งาน', 'ระบบจะบันทึกทุกครั้งที่มีการจ่ายของ รับคืน หรือแก้สิทธิ์ผู้ใช้', 'history')); return; }
     for (const r of d.rows) {
       const tr = document.createElement('tr');
       const c1 = document.createElement('td'); c1.textContent = dt(r.at);
